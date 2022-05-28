@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">WMess</string>
+    <string name="login">Login</string>
+    <string name="sign_in">Sign in</string>
+    <string name="register">Register</string>
+    <string name="password">Password</string>
+    <string name="username">Username</string>
+    <string name="ok">OK</string>
+    <string name="error_message">An error has occurred. Try again.</string>
+    <string name="wrong_login_error">Incorrect login or password.</string>
+    <string name="register_login_taken">This login is already in use, please use another login.</string>
+    <string name="error_title">An error has occured</string>
+    <string name="unable_to_login">Unable to login. Please enter your credentials.</string>
+</resources>
