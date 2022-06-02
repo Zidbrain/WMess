@@ -2,30 +2,26 @@
 
 package com.example.wmess.view
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.tooling.preview.*
+import androidx.compose.ui.unit.*
 import com.example.wmess.R
-import com.example.wmess.ui.common.DecoratedTextInputField
-import com.example.wmess.ui.theme.WMessTheme
+import com.example.wmess.ui.common.*
+import com.example.wmess.ui.theme.*
 
 @Composable
 private fun TopBar() {
@@ -44,7 +40,7 @@ private fun TopBar() {
 @Preview
 private fun SettingsMenu() {
     Column(horizontalAlignment = Alignment.Start) {
-        Row() {
+        Row {
             Image(
                 painterResource(id = R.drawable.ic_launcher_foreground),
                 null,
@@ -59,20 +55,29 @@ private fun SettingsMenu() {
                 Text("djaksdjalksjdlakwjdsaa;lskdfmasdasd;kwasdkwlda")
             }
         }
-        DecoratedTextInputField()
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
+        ) {
+            RedactTextField(modifier = Modifier.fillMaxWidth(), name = "Status")
+            RedactTextField(modifier = Modifier.fillMaxWidth(), name = "Phone Number")
+        }
     }
 }
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 @Preview
-fun RoomsScreen(accessToken: String? = null) {
+fun RoomsScreen() {
     WMessTheme {
+        val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Revealed)
         BackdropScaffold(
             appBar = { TopBar() },
-            peekHeight = 0.dp,
+            scaffoldState = scaffoldState,
             backLayerContent = { SettingsMenu() },
-            scaffoldState = BackdropScaffoldState(BackdropValue.Revealed),
             frontLayerContent = {}) {
         }
     }

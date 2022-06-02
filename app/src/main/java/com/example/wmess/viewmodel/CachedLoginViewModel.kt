@@ -16,7 +16,7 @@ sealed class CachedLoginScreenUiState {
     object InProgress : CachedLoginScreenUiState()
     object Error : CachedLoginScreenUiState()
     object CacheMiss : CachedLoginScreenUiState()
-    class SignedIn(val accessToken: String) : CachedLoginScreenUiState()
+    data class SignedIn(val accessToken: String) : CachedLoginScreenUiState()
 }
 
 @HiltViewModel
@@ -30,8 +30,8 @@ class CachedLoginViewModel @Inject constructor(
         get() = _uiState
 
     fun login() {
-        _uiState.value = CachedLoginScreenUiState.InProgress
         viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = CachedLoginScreenUiState.InProgress
             val loginInfo = repository.getCachedLoginInfo()
 
             if (loginInfo == null)

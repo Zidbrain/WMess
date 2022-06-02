@@ -1,26 +1,21 @@
 package com.example.wmess.view
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.res.*
+import androidx.hilt.navigation.compose.*
 import com.example.wmess.R
-import com.example.wmess.Screens
-import com.example.wmess.ui.theme.WMessTheme
-import com.example.wmess.viewmodel.CachedLoginScreenUiState
-import com.example.wmess.viewmodel.CachedLoginViewModel
+import com.example.wmess.navigation.*
+import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
+import com.example.wmess.ui.theme.*
+import com.example.wmess.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CachedLoginScreen(navController: NavController) {
+fun CachedLoginScreen(navigator: LoginNavigator) {
     val viewModel = hiltViewModel<CachedLoginViewModel>()
 
     WMessTheme {
@@ -35,7 +30,7 @@ fun CachedLoginScreen(navController: NavController) {
                     CachedLoginScreenUiState.Constructed -> viewModel.login()
                     CachedLoginScreenUiState.Error ->
                         AlertDialog(onDismissRequest = {
-                            navController.navigate(Screens.Login)
+                            navigator.navigate(Login)
                         },
                             icon = {
                                 Icon(
@@ -46,7 +41,7 @@ fun CachedLoginScreen(navController: NavController) {
                             title = { Text(stringResource(id = R.string.error_title)) },
                             text = { Text(stringResource(R.string.unable_to_login)) },
                             confirmButton = {
-                                TextButton(onClick = { navController.navigate(Screens.Login) }) {
+                                TextButton(onClick = { navigator.navigate(Login) }) {
                                     Text(text = stringResource(id = R.string.ok))
                                 }
                             })
@@ -55,8 +50,8 @@ fun CachedLoginScreen(navController: NavController) {
                             Alignment.Center
                         )
                     )
-                    is CachedLoginScreenUiState.SignedIn -> navController.navigate(Screens.Messenger(state.accessToken))
-                    CachedLoginScreenUiState.CacheMiss -> navController.navigate(Screens.Login)
+                    is CachedLoginScreenUiState.SignedIn -> navigator.NavigateComposable(Messenger(state.accessToken))
+                    CachedLoginScreenUiState.CacheMiss -> navigator.NavigateComposable(Login)
                 }
             }
         }
