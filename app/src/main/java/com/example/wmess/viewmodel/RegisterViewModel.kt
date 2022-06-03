@@ -1,20 +1,14 @@
 package com.example.wmess.viewmodel
 
-import androidx.annotation.StringRes
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.annotation.*
+import androidx.compose.runtime.*
+import androidx.lifecycle.*
 import com.example.wmess.R
-import com.example.wmess.model.WMessRepository
-import com.example.wmess.model.modelclasses.LoginInfo
-import com.example.wmess.model.modelclasses.LoginResult
-import com.example.wmess.model.modelclasses.RegisterInfo
-import com.example.wmess.model.modelclasses.RegisterResult
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import com.example.wmess.model.*
+import com.example.wmess.model.modelclasses.*
+import dagger.hilt.android.lifecycle.*
+import kotlinx.coroutines.*
+import javax.inject.*
 
 sealed class RegisterScreenUiState {
     object Unregistered : RegisterScreenUiState()
@@ -25,7 +19,7 @@ sealed class RegisterScreenUiState {
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val repository: WMessRepository,
+    private val repository: LoginRepository,
 ) : ViewModel() {
     private val _uiState = mutableStateOf<RegisterScreenUiState>(RegisterScreenUiState.Unregistered)
     val uiState: State<RegisterScreenUiState>

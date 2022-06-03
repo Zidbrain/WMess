@@ -4,7 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wmess.model.WMessRepository
+import com.example.wmess.model.LoginRepository
 import com.example.wmess.model.modelclasses.LoginResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ sealed class CachedLoginScreenUiState {
 
 @HiltViewModel
 class CachedLoginViewModel @Inject constructor(
-    private val repository: WMessRepository
+    private val repository: LoginRepository
 ) : ViewModel() {
 
     private val _uiState =

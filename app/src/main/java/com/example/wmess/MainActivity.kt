@@ -7,10 +7,20 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.*
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.LoginNavigator.*
+import com.example.wmess.viewmodel.*
+import dagger.hilt.*
 import dagger.hilt.android.*
+import dagger.hilt.android.components.*
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @EntryPoint
+    @InstallIn(ActivityComponent::class)
+    interface ViewModelFactoryProvider {
+        fun userSettingsViewModelFactory(): UserSettingsViewModel.Factory
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

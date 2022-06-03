@@ -1,17 +1,21 @@
 package com.example.wmess.di
 
-import com.example.wmess.model.TestRepository
-import com.example.wmess.model.WMessRepository
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import com.example.wmess.model.*
+import dagger.*
+import dagger.hilt.*
+import dagger.hilt.android.components.*
+import dagger.hilt.components.*
 
+@Suppress("UNCHECKED_CAST")
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class, ActivityComponent::class, ActivityRetainedComponent::class)
 object TestModule {
 
     @Provides
-    fun provideWMessRepository(): WMessRepository =
-        TestRepository()
+    fun provideLoginRepository(): LoginRepository =
+        TestLoginRepository()
+
+    @Provides
+    fun provideMessengerRepositoryFactory(): MessengerRepositoryFactory<MessengerRepository> =
+        TestMessengerRepositoryFactory as MessengerRepositoryFactory<MessengerRepository>
 }

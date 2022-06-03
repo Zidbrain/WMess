@@ -6,7 +6,7 @@ import java.util.*
 import javax.inject.*
 
 @Singleton
-class TestRepository : WMessRepository {
+class TestLoginRepository : LoginRepository {
     private val users = mutableMapOf(
         Pair(
             "user",
