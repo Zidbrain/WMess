@@ -1,28 +1,37 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterialApi::class)
 
 package com.example.wmess.view
 
 import android.app.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment.Companion.TopEnd
+import androidx.compose.ui.Alignment.Companion.TopStart
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.graphics.painter.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import com.example.wmess.*
 import com.example.wmess.R
+import com.example.wmess.model.modelclasses.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
@@ -31,18 +40,123 @@ import dagger.hilt.android.*
 import androidx.compose.material3.CircularProgressIndicator as ProgressIndicator
 
 @Composable
-private fun TopBar() {
+private fun TopBar(isMenuOpen: MutableState<Boolean>) {
     TopAppBar(
         elevation = 0.dp,
         backgroundColor = Color.Transparent,
         title = { Text("WMess") },
         navigationIcon = {
-            IconButton(onClick = { /*TODO*/ }) {
-                Icon(ImageVector.vectorResource(id = R.drawable.ic_baseline_menu_24), null)
+            IconButton(onClick = { isMenuOpen.value = !isMenuOpen.value }) {
+                if (!isMenuOpen.value)
+                    Icon(Icons.Default.Menu, null)
+                else
+                    Icon(Icons.Default.Close, null)
             }
         })
 }
 
+@OptIn(ExperimentalUnitApi::class)
+@Composable
+private fun MessageRow(
+    avatar: Painter,
+    username: String,
+    message: Message,
+    viewModel: RoomsViewModel
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = CenterVertically
+    ) {
+        Image(
+            avatar, null,
+            modifier = Modifier
+                .clip(CircleShape)
+                .size(80.dp)
+        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp, CenterVertically),
+        ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    modifier = Modifier.align(TopStart),
+                    text = username,
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = TextUnit(24f, TextUnitType.Sp)
+                    ),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                )
+                Text(
+                    modifier = Modifier
+                        .align(TopEnd),
+                    text = "Date",
+                    style = TextStyle(
+                        color = Color.Gray,
+                        fontSize = TextUnit(12f, TextUnitType.Sp)
+                    )
+                )
+            }
+            Text(
+                text = if (message.userFrom == viewModel.currentUser.id)
+                    "You: ${message.content!!}"
+                else
+                    message.content!!,
+                style = TextStyle(Color.DarkGray, TextUnit(14F, TextUnitType.Sp)),
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 2
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoomsBoard(viewModel: RoomsViewModel) {
+    when (viewModel.uiState) {
+        RoomsViewModel.UiState.Loading -> LaunchedEffect("Rooms") {
+            viewModel.loadRooms()
+        }
+        RoomsViewModel.UiState.Loaded -> {
+            val messages = remember { viewModel.rooms }
+            val listState = rememberLazyListState()
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(end = 8.dp),
+                modifier = Modifier.scrollbar(listState, false),
+            ) {
+                items(messages.toList()) {
+                    Box(modifier = Modifier.clickable { }) {
+                        val (user, message) = remember { it }
+                        MessageRow(
+                            avatar = painterResource(id = R.drawable.default_profile_icon_16),
+                            username = user.nickname,
+                            message = message,
+                            viewModel = viewModel
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            drawLine(
+                                brush = Brush.horizontalGradient(
+                                    0f to Color.Transparent,
+                                    0.5f to Color.Black,
+                                    1f to Color.Transparent
+                                ),
+                                start = Offset(0f, size.height),
+                                end = Offset(size.width, size.height),
+                                strokeWidth = 2.5f
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalUnitApi::class)
 @Composable
 private fun SettingsMenu(viewModel: UserSettingsViewModel) {
     when (viewModel.uiState) {
@@ -55,62 +169,102 @@ private fun SettingsMenu(viewModel: UserSettingsViewModel) {
             }
         }
         else ->
-            Column(horizontalAlignment = Alignment.Start) {
-                Row {
-                    Image(
-                        painterResource(id = R.drawable.ic_launcher_foreground),
-                        null,
-                        modifier = Modifier.clip(
-                            CircleShape
+            Column(
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box {
+                        Image(
+                            painterResource(id = R.drawable.default_profile_icon_16),
+                            null,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .size(96.dp)
+                        )
+                        IconButton(
+                            onClick = { /*TODO*/ },
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .background(Color.White, CircleShape)
+                                .size(36.dp)
+                        ) {
+                            Icon(
+                                painterResource(id = R.drawable.ic_baseline_add_a_photo_24),
+                                null,
+                                modifier = Modifier.offset((-2).dp)
+                            )
+
+                        }
+                    }
+                    RedactTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(CenterVertically),
+                        name = "Nickname",
+                        mutableState = viewModel.fields.nickname,
+                        onConfirmedChange = { viewModel.postFields() },
+                        textStyle = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = TextUnit(20f, TextUnitType.Sp)
                         )
                     )
-                    Column(
-                        verticalArrangement = Arrangement.SpaceAround,
-                    ) {
-                        Text(viewModel.fields.nickname.value, fontWeight = FontWeight.Bold)
-                        Text("djaksdjalksjdlakwjdsaa;lskdfmasdasd;kwasdkwlda")
-                    }
                 }
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp)
                         .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
+                    verticalArrangement = Arrangement.spacedBy(5.dp, CenterVertically)
                 ) {
                     RedactTextField(
                         modifier = Modifier.fillMaxWidth(),
                         name = "Status",
                         mutableState = viewModel.fields.status,
-                        onConfirmedChange = { viewModel.postFields() }
+                        onConfirmedChange = { viewModel.postFields() },
                     )
                     RedactTextField(
                         modifier = Modifier.fillMaxWidth(),
                         name = "Phone Number",
                         mutableState = viewModel.fields.phoneNumber,
-                        onConfirmedChange = { viewModel.postFields() }
+                        onConfirmedChange = { viewModel.postFields() },
                     )
                 }
             }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 @Preview
 fun RoomsScreen(accessToken: String = "") {
-    val settingsViewModel = EntryPointAccessors.fromActivity(
+    val vmFactory = EntryPointAccessors.fromActivity(
         LocalContext.current as Activity,
         MainActivity.ViewModelFactoryProvider::class.java
-    ).userSettingsViewModelFactory().create(accessToken)
+    )
+    val settingsViewModel = vmFactory.userSettingsViewModelFactory().create(accessToken)
+    val roomsViewModel = vmFactory.roomsViewModelFactory().create(accessToken)
 
     WMessTheme {
-        val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Revealed)
+        val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Concealed)
+        val menuOpen = remember { mutableStateOf(false) }
+
+        if (menuOpen.value and scaffoldState.isConcealed)
+            LaunchedEffect("Reveal") {
+                scaffoldState.reveal()
+            }
+        else if (!menuOpen.value and scaffoldState.isRevealed)
+            LaunchedEffect("Conceal") {
+                scaffoldState.conceal()
+            }
+
         BackdropScaffold(
-            appBar = { TopBar() },
+            appBar = { TopBar(menuOpen) },
             scaffoldState = scaffoldState,
             backLayerContent = { SettingsMenu(settingsViewModel) },
-            frontLayerContent = {}) {
+            frontLayerContent = { RoomsBoard(roomsViewModel) },
+            gesturesEnabled = false
+        ) {
         }
     }
 }

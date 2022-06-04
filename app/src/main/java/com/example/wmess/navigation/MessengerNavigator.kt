@@ -11,6 +11,7 @@ class MessengerNavigator(navController: NavHostController) :
 
     open class MessengerNavTarget(route: String) : GenericNavTarget(route) {
         companion object {
+            fun getRoute(accessToken: String) = "messenger/${accessToken}"
             const val EXTERNAL_ROUTE = "messenger/{accessToken}"
         }
 

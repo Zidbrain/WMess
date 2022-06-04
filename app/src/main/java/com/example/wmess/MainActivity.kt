@@ -12,6 +12,8 @@ import dagger.hilt.*
 import dagger.hilt.android.*
 import dagger.hilt.android.components.*
 
+const val BASE_URL = "https://localhost/api/"
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -19,6 +21,7 @@ class MainActivity : ComponentActivity() {
     @InstallIn(ActivityComponent::class)
     interface ViewModelFactoryProvider {
         fun userSettingsViewModelFactory(): UserSettingsViewModel.Factory
+        fun roomsViewModelFactory(): RoomsViewModel.Factory
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

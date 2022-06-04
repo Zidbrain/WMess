@@ -6,7 +6,7 @@ import androidx.navigation.compose.*
 
 abstract class GenericNavTarget(val route: String)
 
-abstract class GenericNavigator<NavTarget : GenericNavTarget, Navigator : GenericNavigator<NavTarget, Navigator>>(
+abstract class GenericNavigator<in NavTarget : GenericNavTarget, in Navigator : GenericNavigator<NavTarget, Navigator>>(
     private val navController: NavHostController
 ) {
     @Composable
