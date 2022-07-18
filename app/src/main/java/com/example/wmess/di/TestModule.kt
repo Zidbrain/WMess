@@ -1,21 +1,17 @@
 package com.example.wmess.di
 
 import com.example.wmess.model.*
-import dagger.*
-import dagger.hilt.*
-import dagger.hilt.android.components.*
-import dagger.hilt.components.*
+import com.example.wmess.viewmodel.*
+import org.koin.androidx.viewmodel.dsl.*
+import org.koin.dsl.*
 
-@Suppress("UNCHECKED_CAST")
-@Module
-@InstallIn(SingletonComponent::class, ActivityComponent::class, ActivityRetainedComponent::class)
-object TestModule {
+val testModule = module {
+    single<LoginRepository> { TestLoginRepository() }
+    single<MessengerRepository> { TestMessengerRepository(it.get()) }
 
-    @Provides
-    fun provideLoginRepository(): LoginRepository =
-        TestLoginRepository()
-
-    @Provides
-    fun provideMessengerRepositoryFactory(): MessengerRepositoryFactory<MessengerRepository> =
-        TestMessengerRepositoryFactory as MessengerRepositoryFactory<MessengerRepository>
+    viewModel { LoginViewModel(get()) }
+    viewModel { CachedLoginViewModel(get()) }
+    viewModel { RegisterViewModel(get()) }
+    viewModel { RoomsViewModel(get() { it }) }
+    viewModel { UserSettingsViewModel(get { it }) }
 }

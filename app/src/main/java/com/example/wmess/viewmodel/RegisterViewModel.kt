@@ -6,9 +6,8 @@ import androidx.lifecycle.*
 import com.example.wmess.R
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
-import dagger.hilt.android.lifecycle.*
 import kotlinx.coroutines.*
-import javax.inject.*
+import kotlinx.coroutines.flow.*
 
 sealed class RegisterScreenUiState {
     object Unregistered : RegisterScreenUiState()
@@ -17,12 +16,11 @@ sealed class RegisterScreenUiState {
     object InProgress : RegisterScreenUiState()
 }
 
-@HiltViewModel
-class RegisterViewModel @Inject constructor(
+class RegisterViewModel(
     private val repository: LoginRepository,
 ) : ViewModel() {
-    private val _uiState = mutableStateOf<RegisterScreenUiState>(RegisterScreenUiState.Unregistered)
-    val uiState: State<RegisterScreenUiState>
+    private val _uiState = MutableStateFlow<RegisterScreenUiState>(RegisterScreenUiState.Unregistered)
+    val uiState: StateFlow<RegisterScreenUiState>
         get() = _uiState
 
     val login = mutableStateOf("")

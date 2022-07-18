@@ -5,8 +5,8 @@ import androidx.lifecycle.*
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.UserSettingsViewModel.UiState.*
-import dagger.assisted.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 class UserSettingsFields(private val user: User) {
 
@@ -23,26 +23,18 @@ class UserSettingsFields(private val user: User) {
     }
 }
 
-class UserSettingsViewModel @AssistedInject constructor(
-    repositoryFactory: MessengerRepositoryFactory<MessengerRepository>,
-    @Assisted accessToken: String
+class UserSettingsViewModel(
+    private val repository: MessengerRepository
 ) :
     ViewModel() {
 
-    @AssistedFactory
-    interface Factory {
-        fun create(accessToken: String): UserSettingsViewModel
-    }
-
-    private val _uiState = mutableStateOf<UiState>(Loading)
-    val uiState by _uiState
+    private val _uiState = MutableStateFlow<UiState>(Loading)
+    val uiState: StateFlow<UiState> = _uiState
 
     open class UiState {
         object Loading : UiState()
         object Loaded : UiState()
     }
-
-    private val repository = repositoryFactory.provide(accessToken)
 
     lateinit var fields: UserSettingsFields
         private set

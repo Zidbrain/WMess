@@ -16,7 +16,3 @@ abstract class MessengerRepository(protected val accessToken: String) {
 
     abstract val notifications: Flow<Pair<User, Message>>
 }
-
-fun interface MessengerRepositoryFactory <Repository: MessengerRepository> {
-    fun provide(accessToken: String): Repository
-}

@@ -3,9 +3,7 @@ package com.example.wmess.model
 import com.example.wmess.model.modelclasses.*
 import kotlinx.coroutines.*
 import java.util.*
-import javax.inject.*
 
-@Singleton
 class TestLoginRepository : LoginRepository {
     private val users = mutableMapOf(
         Pair(

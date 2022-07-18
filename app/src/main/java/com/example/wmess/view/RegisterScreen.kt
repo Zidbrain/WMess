@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.vector.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.*
 import androidx.constraintlayout.compose.*
-import androidx.hilt.navigation.compose.*
+import androidx.lifecycle.viewmodel.compose.*
 import com.example.wmess.R
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
@@ -51,10 +51,10 @@ private fun RegisterButton(viewModel: RegisterViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(navigator: LoginNavigator) {
-    val viewModel = hiltViewModel<RegisterViewModel>()
+    val viewModel: RegisterViewModel by viewModel()
 
     WMessTheme {
-        val state = viewModel.uiState.value
+        val state = viewModel.uiState.collectAsState().value
 
         when (state) {
             is RegisterScreenUiState.Error -> {

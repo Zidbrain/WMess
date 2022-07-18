@@ -7,9 +7,9 @@ import com.example.wmess.navigation.MessengerNavigator.MessengerNavTarget.Rooms.
 import com.example.wmess.view.*
 
 class MessengerNavigator(navController: NavHostController) :
-    GenericNavigator<MessengerNavTarget, MessengerNavigator>(navController) {
+    Navigator<MessengerNavTarget>(navController) {
 
-    open class MessengerNavTarget(route: String) : GenericNavTarget(route) {
+    open class MessengerNavTarget(route: String) : NavTarget(route) {
         companion object {
             fun getRoute(accessToken: String) = "messenger/${accessToken}"
             const val EXTERNAL_ROUTE = "messenger/{accessToken}"
@@ -22,7 +22,7 @@ class MessengerNavigator(navController: NavHostController) :
         }
     }
 
-    override fun NavGraphBuilder.navGraph(navigator: MessengerNavigator) {
+    override fun NavGraphBuilder.navGraph() {
         navigation(
             startDestination = ROUTE_SCHEME,
             route = MessengerNavTarget.EXTERNAL_ROUTE

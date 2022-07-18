@@ -9,13 +9,13 @@ import androidx.compose.ui.graphics.vector.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.*
 import androidx.constraintlayout.compose.*
-import androidx.hilt.navigation.compose.*
 import com.example.wmess.R
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
+import org.koin.androidx.compose.*
 
 @Composable
 private fun InputFields(viewModel: LoginViewModel) {
@@ -82,10 +82,10 @@ private fun Buttons(viewModel: LoginViewModel, navigator: LoginNavigator) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navigator: LoginNavigator) {
-    val viewModel: LoginViewModel = hiltViewModel()
+    val viewModel: LoginViewModel by viewModel()
     WMessTheme {
 
-        val state = viewModel.uiState.value
+        val state = viewModel.uiState.collectAsState().value
 
         when (state) {
             is LoginScreenUiState.Error -> AlertDialog(

@@ -1,42 +1,32 @@
 package com.example.wmess.viewmodel
 
-import androidx.compose.runtime.*
 import androidx.lifecycle.*
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.RoomsViewModel.UiState.*
-import dagger.assisted.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-class RoomsViewModel @AssistedInject constructor(
-    repositoryFactory: MessengerRepositoryFactory<MessengerRepository>,
-    @Assisted accessToken: String
+class RoomsViewModel(
+    private val repository: MessengerRepository
 ) : ViewModel() {
 
-    private val _uiState = mutableStateOf<UiState>(Loading)
-    val uiState by _uiState
-
-    private val repository = repositoryFactory.provide(accessToken)
-
-    @AssistedFactory
-    interface Factory {
-        fun create(accessToken: String): RoomsViewModel
-    }
+    private val _uiState = MutableStateFlow<UiState>(Loading)
+    val uiState: StateFlow<UiState> = _uiState
 
     open class UiState {
         object Loading : UiState()
         object Loaded : UiState()
     }
 
-    private val _currentUser = mutableStateOf(null as User?)
-    val currentUser get() = _currentUser.value!!
+    private val _currentUser = MutableStateFlow(null as User?)
+    val currentUser: StateFlow<User?> = _currentUser
 
-    private val _rooms = mutableStateOf(emptyMap<User, MutableStateFlow<Message>>())
-    val rooms: Map<User, StateFlow<Message>> by _rooms
+    private val _rooms = MutableStateFlow(emptyMap<User, MutableStateFlow<Message>>())
+    val rooms: StateFlow<Map<User, StateFlow<Message>>> = _rooms
 
-    private val _unreadAmount = mutableStateOf(emptyMap<User, MutableStateFlow<Int>>())
-    val unreadAmount: Map<User, StateFlow<Int>> by _unreadAmount
+    private val _unreadAmount = MutableStateFlow(emptyMap<User, MutableStateFlow<Int>>())
+    val unreadAmount: StateFlow<Map<User, StateFlow<Int>>> = _unreadAmount
 
     /**
      * Temporary

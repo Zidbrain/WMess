@@ -6,14 +6,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.time.*
 import java.util.*
-import javax.inject.*
 import kotlin.coroutines.*
 
-@Singleton
-object TestMessengerRepositoryFactory : MessengerRepositoryFactory<TestMessengerRepository> {
-    override fun provide(accessToken: String): TestMessengerRepository =
-        TestMessengerRepository(accessToken)
-}
 
 private val _users = mutableListOf(
     User(UUID.randomUUID(), "Nickname1", "+79999999999", "Status1"),

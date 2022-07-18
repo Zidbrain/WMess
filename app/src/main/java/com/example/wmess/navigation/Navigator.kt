@@ -4,35 +4,35 @@ import androidx.compose.runtime.*
 import androidx.navigation.*
 import androidx.navigation.compose.*
 
-abstract class GenericNavTarget(val route: String)
+abstract class NavTarget(val route: String)
 
-abstract class GenericNavigator<in NavTarget : GenericNavTarget, in Navigator : GenericNavigator<NavTarget, Navigator>>(
+abstract class Navigator<in T : NavTarget>(
     private val navController: NavHostController
 ) {
     @Composable
-    fun NavigateComposable(navTarget: NavTarget, builder: NavOptionsBuilder.() -> Unit = {}) {
+    fun NavigateComposable(navTarget: T, builder: NavOptionsBuilder.() -> Unit = {}) {
         LaunchedEffect("Navigation") {
             navigate(navTarget, builder)
         }
     }
 
-    fun navigate(navTarget: NavTarget, builder: NavOptionsBuilder.() -> Unit = {}) =
+    fun navigate(navTarget: T, builder: NavOptionsBuilder.() -> Unit = {}) =
         navController.navigate(navTarget.route, builder)
 
-    abstract fun NavGraphBuilder.navGraph(navigator: Navigator)
+    abstract fun NavGraphBuilder.navGraph()
 
     @Suppress("UNCHECKED_CAST")
-    fun buildTree(navGraphBuilder: NavGraphBuilder) = navGraphBuilder.navGraph(this as Navigator)
+    fun buildTree(navGraphBuilder: NavGraphBuilder) = navGraphBuilder.navGraph()
 
     protected fun NavGraphBuilder.navigation(
-        startDestination: NavTarget,
+        startDestination: T,
         route: String,
         builder: NavGraphBuilder.() -> Unit
     ): Unit =
         navigation(startDestination = startDestination.route, route = route, builder)
 
     protected fun NavGraphBuilder.composable(
-        target: NavTarget,
+        target: T,
         arguments: List<NamedNavArgument> = emptyList(),
         deepLinks: List<NavDeepLink> = emptyList(),
         content: @Composable

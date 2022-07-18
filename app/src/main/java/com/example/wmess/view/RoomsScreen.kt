@@ -2,7 +2,6 @@
 
 package com.example.wmess.view
 
-import android.app.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -19,19 +18,18 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
-import com.example.wmess.*
 import com.example.wmess.R
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
 import com.example.wmess.viewmodel.UserSettingsViewModel.UiState.*
-import dagger.hilt.android.*
+import org.koin.androidx.compose.*
+import org.koin.core.parameter.*
 import androidx.compose.material3.CircularProgressIndicator as ProgressIndicator
 
 @Composable
@@ -52,12 +50,12 @@ private fun TopBar(isMenuOpen: MutableState<Boolean>) {
 
 @Composable
 private fun RoomsBoard(viewModel: RoomsViewModel) {
-    when (viewModel.uiState) {
+    when (viewModel.uiState.collectAsState().value) {
         RoomsViewModel.UiState.Loading -> LaunchedEffect("Rooms") {
             viewModel.loadRooms()
         }
         RoomsViewModel.UiState.Loaded -> {
-            val messages = remember { viewModel.rooms }
+            val messages = viewModel.rooms.collectAsState()
             val listState = rememberLazyListState()
 
             LazyColumn(
@@ -65,10 +63,10 @@ private fun RoomsBoard(viewModel: RoomsViewModel) {
                 contentPadding = PaddingValues(end = 8.dp),
                 modifier = Modifier.scrollbar(listState, false),
             ) {
-                items(messages.toList(), key = { it.first.id }) {
+                items(messages.value.toList(), key = { it.first.id }) {
                     val (user, messageFlow) = remember { it }
                     Box(modifier = Modifier.clickable { viewModel.readMessages(user) }) {
-                        val unread by viewModel.unreadAmount[user]!!.collectAsState()
+                        val unread by viewModel.unreadAmount.collectAsState().value[user]!!.collectAsState()
                         val message by messageFlow.collectAsState()
 
                         MessageRow(
@@ -101,7 +99,7 @@ private fun RoomsBoard(viewModel: RoomsViewModel) {
 @OptIn(ExperimentalUnitApi::class)
 @Composable
 private fun SettingsMenu(viewModel: UserSettingsViewModel) {
-    when (viewModel.uiState) {
+    when (viewModel.uiState.collectAsState().value) {
         Loading -> {
             Box {
                 ProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -180,12 +178,8 @@ private fun SettingsMenu(viewModel: UserSettingsViewModel) {
 @Composable
 @Preview
 fun RoomsScreen(accessToken: String = "") {
-    val vmFactory = EntryPointAccessors.fromActivity(
-        LocalContext.current as Activity,
-        MainActivity.ViewModelFactoryProvider::class.java
-    )
-    val settingsViewModel = vmFactory.userSettingsViewModelFactory().create(accessToken)
-    val roomsViewModel = vmFactory.roomsViewModelFactory().create(accessToken)
+    val settingsViewModel: UserSettingsViewModel by viewModel { parametersOf(accessToken) }
+    val roomsViewModel: RoomsViewModel by viewModel { parametersOf(accessToken) }
 
     WMessTheme {
         val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Concealed)

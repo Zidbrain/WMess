@@ -67,7 +67,7 @@ fun MessageRow(
                 Text(
                     modifier = Modifier.align(Alignment.CenterStart),
                     text = buildAnnotatedString {
-                        if (message.userFrom == viewModel.currentUser.id)
+                        if (message.userFrom == viewModel.currentUser.collectAsState().value!!.id)
                             withStyle(SpanStyle(color = Color.Blue)) {
                                 append("You: ")
                             }
