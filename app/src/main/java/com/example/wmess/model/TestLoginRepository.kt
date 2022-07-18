@@ -32,8 +32,6 @@ class TestLoginRepository : LoginRepository {
     }
 
     override suspend fun login(loginInfo: LoginInfo): LoginResult {
-        delay(1000)
-
         if (users[loginInfo.login]?.second == loginInfo.password) {
             return LoginResult.Success("login: ${loginInfo.login}\npassword: ${loginInfo.password}")
         }

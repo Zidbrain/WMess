@@ -3,9 +3,11 @@ package com.example.wmess.model
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.model.modelclasses.MessageType.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.time.*
 import java.util.*
 import javax.inject.*
+import kotlin.coroutines.*
 
 @Singleton
 object TestMessengerRepositoryFactory : MessengerRepositoryFactory<TestMessengerRepository> {
@@ -13,17 +15,18 @@ object TestMessengerRepositoryFactory : MessengerRepositoryFactory<TestMessenger
         TestMessengerRepository(accessToken)
 }
 
+private val _users = mutableListOf(
+    User(UUID.randomUUID(), "Nickname1", "+79999999999", "Status1"),
+    User(UUID.randomUUID(), "Nickname2", "+79999999992", "Status2"),
+    User(UUID.randomUUID(), "Nickname3", "+79999999993", "Status3")
+)
+
 class TestMessengerRepository(accessToken: String) : MessengerRepository(accessToken) {
     private lateinit var users: MutableList<User>
 
     override suspend fun reloadUsers(): List<User> {
-        delay(1000)
-        users = mutableListOf(
-            User(UUID.randomUUID(), "Nickname1", "+79999999999", "Status1"),
-            User(UUID.randomUUID(), "Nickname2", "+79999999992", "Status2"),
-            User(UUID.randomUUID(), "Nickname3", "+79999999993", "Status3")
-        )
-        return users
+        users = _users
+            return users
     }
 
     override fun getUserById(id: UUID) =
@@ -41,10 +44,10 @@ class TestMessengerRepository(accessToken: String) : MessengerRepository(accessT
 
     override suspend fun patchUser(user: User) {
         users[0] = user
+        _users[0] = user
     }
 
     override suspend fun getHistory(): List<Message> {
-        delay(1000)
 
         return listOf(
             Message(users[0].id, users[1].id, TEXT, "Message1", null, Instant.now()),
@@ -67,4 +70,22 @@ class TestMessengerRepository(accessToken: String) : MessengerRepository(accessT
         }
         return map
     }
+
+    override val notifications: Flow<Pair<User, Message>> = flow {
+        for (i in generateSequence(3) { it + 1 }) {
+            delay(1000)
+            val from = getUsers()[1]
+
+            emit(
+                from to Message(
+                    from.id,
+                    getCurrentUser().id,
+                    TEXT,
+                    "Message$i",
+                    null,
+                    Instant.now()
+                )
+            )
+        }
+    }.shareIn(CoroutineScope(EmptyCoroutineContext), SharingStarted.Eagerly)
 }

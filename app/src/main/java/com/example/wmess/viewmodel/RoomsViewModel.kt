@@ -7,6 +7,7 @@ import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.RoomsViewModel.UiState.*
 import dagger.assisted.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 class RoomsViewModel @AssistedInject constructor(
     repositoryFactory: MessengerRepositoryFactory<MessengerRepository>,
@@ -31,16 +32,37 @@ class RoomsViewModel @AssistedInject constructor(
     private val _currentUser = mutableStateOf(null as User?)
     val currentUser get() = _currentUser.value!!
 
-    private val _rooms = mutableStateOf(emptyMap<User, Message>())
-    val rooms by _rooms
+    private val _rooms = mutableStateOf(emptyMap<User, MutableStateFlow<Message>>())
+    val rooms: Map<User, StateFlow<Message>> by _rooms
+
+    private val _unreadAmount = mutableStateOf(emptyMap<User, MutableStateFlow<Int>>())
+    val unreadAmount: Map<User, StateFlow<Int>> by _unreadAmount
+
+    /**
+     * Temporary
+     */
+    fun readMessages(user: User) {
+        _unreadAmount.value[user]?.update { 0 }
+    }
 
     fun loadRooms() {
         viewModelScope.launch {
             _currentUser.value = repository.getCurrentUser()
 
-            _rooms.value = repository.getHistoryByUsers().asIterable().associate {
-                it.key to it.value.last()
+            val history = repository.getHistoryByUsers().asIterable()
+            _rooms.value = history.associate { (user, messages) ->
+                user to MutableStateFlow(messages.last())
             }
+            _unreadAmount.value = history.associate { (user, messages) ->
+                user to MutableStateFlow(messages.count { !it.isRead })
+            }
+
+            repository.notifications
+                .onEach { (user, message) ->
+                    _rooms.value[user]?.update { message }
+                    _unreadAmount.value[user]?.update { amount -> amount + 1 }
+                }
+                .launchIn(viewModelScope)
 
             _uiState.value = Loaded
         }

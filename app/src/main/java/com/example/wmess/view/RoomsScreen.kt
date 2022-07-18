@@ -16,22 +16,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.Alignment.Companion.CenterVertically
-import androidx.compose.ui.Alignment.Companion.TopEnd
-import androidx.compose.ui.Alignment.Companion.TopStart
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.painter.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
-import androidx.compose.ui.text.style.*
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import com.example.wmess.*
 import com.example.wmess.R
-import com.example.wmess.model.modelclasses.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
@@ -55,64 +50,6 @@ private fun TopBar(isMenuOpen: MutableState<Boolean>) {
         })
 }
 
-@OptIn(ExperimentalUnitApi::class)
-@Composable
-private fun MessageRow(
-    avatar: Painter,
-    username: String,
-    message: Message,
-    viewModel: RoomsViewModel
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = CenterVertically
-    ) {
-        Image(
-            avatar, null,
-            modifier = Modifier
-                .clip(CircleShape)
-                .size(80.dp)
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp, CenterVertically),
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    modifier = Modifier.align(TopStart),
-                    text = username,
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = TextUnit(24f, TextUnitType.Sp)
-                    ),
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                )
-                Text(
-                    modifier = Modifier
-                        .align(TopEnd),
-                    text = "Date",
-                    style = TextStyle(
-                        color = Color.Gray,
-                        fontSize = TextUnit(12f, TextUnitType.Sp)
-                    )
-                )
-            }
-            Text(
-                text = if (message.userFrom == viewModel.currentUser.id)
-                    "You: ${message.content!!}"
-                else
-                    message.content!!,
-                style = TextStyle(Color.DarkGray, TextUnit(14F, TextUnitType.Sp)),
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2
-            )
-        }
-    }
-}
-
 @Composable
 private fun RoomsBoard(viewModel: RoomsViewModel) {
     when (viewModel.uiState) {
@@ -122,18 +59,23 @@ private fun RoomsBoard(viewModel: RoomsViewModel) {
         RoomsViewModel.UiState.Loaded -> {
             val messages = remember { viewModel.rooms }
             val listState = rememberLazyListState()
+
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(end = 8.dp),
                 modifier = Modifier.scrollbar(listState, false),
             ) {
-                items(messages.toList()) {
-                    Box(modifier = Modifier.clickable { }) {
-                        val (user, message) = remember { it }
+                items(messages.toList(), key = { it.first.id }) {
+                    val (user, messageFlow) = remember { it }
+                    Box(modifier = Modifier.clickable { viewModel.readMessages(user) }) {
+                        val unread by viewModel.unreadAmount[user]!!.collectAsState()
+                        val message by messageFlow.collectAsState()
+
                         MessageRow(
                             avatar = painterResource(id = R.drawable.default_profile_icon_16),
                             username = user.nickname,
                             message = message,
+                            unreadAmount = unread,
                             viewModel = viewModel
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -249,11 +191,11 @@ fun RoomsScreen(accessToken: String = "") {
         val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Concealed)
         val menuOpen = remember { mutableStateOf(false) }
 
-        if (menuOpen.value and scaffoldState.isConcealed)
+        if (menuOpen.value && scaffoldState.isConcealed)
             LaunchedEffect("Reveal") {
                 scaffoldState.reveal()
             }
-        else if (!menuOpen.value and scaffoldState.isRevealed)
+        else if (!menuOpen.value && scaffoldState.isRevealed)
             LaunchedEffect("Conceal") {
                 scaffoldState.conceal()
             }

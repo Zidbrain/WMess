@@ -9,7 +9,8 @@ data class Message(
     val messageType: MessageType,
     val content: String?,
     val fileHandle: String?,
-    val sentDate: Instant
+    val sentDate: Instant,
+    val isRead: Boolean = false
 )
 
 enum class MessageType {
