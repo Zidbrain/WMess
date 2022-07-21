@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
+import androidx.compose.material.SnackbarResult.*
 import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
 import com.example.wmess.viewmodel.UiState.*
+import com.google.accompanist.swiperefresh.*
 import org.koin.androidx.compose.*
 import org.koin.core.parameter.*
 
@@ -53,85 +55,93 @@ private fun TopBar(isMenuOpen: MutableState<Boolean>) {
 private fun RoomsBoard(
     viewModel: RoomsViewModel,
     navigator: MessengerNavigator,
-    accessToken: String
+    accessToken: String,
+    snackbarHostState: SnackbarHostState,
+    reload: () -> Unit
 ) {
-    when (val state = viewModel.uiState.collectAsState().value) {
-        Loading -> {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-        }
-        Loaded -> {
-            val messages = viewModel.rooms.collectAsState()
-            val listState = rememberLazyListState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    SwipeRefresh(
+        modifier = Modifier.fillMaxSize(),
+        state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
+        onRefresh = reload
+    ) {
+        when (val state = viewModel.uiState.collectAsState().value) {
+            Loading -> isRefreshing = true
+            Loaded -> {
+                val messages = viewModel.rooms.collectAsState()
+                val listState = rememberLazyListState()
 
-            LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(end = 8.dp),
-                modifier = Modifier.scrollbar(listState, false),
-            ) {
-                items(messages.value.toList(), key = { it.first.id }) {
-                    val (user, messageFlow) = remember { it }
-                    Box(modifier = Modifier.clickable {
-                        viewModel.readMessages(user)
-                        navigator.navigate(MessengerNavTarget.MessageBoard(accessToken, user))
-                    }) {
-                        val unread by viewModel.unreadAmount.collectAsState().value[user]!!.collectAsState()
-                        val message by messageFlow.collectAsState()
+                isRefreshing = false
 
-                        MessageRow(
-                            imageLoader = viewModel.imageLoader,
-                            withUser = user,
-                            message = message,
-                            unreadAmount = unread,
-                            currentUser = viewModel.currentUser.collectAsState().value!!
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawLine(
-                                brush = Brush.horizontalGradient(
-                                    0f to Color.Transparent,
-                                    0.5f to Color.Black,
-                                    1f to Color.Transparent
-                                ),
-                                start = Offset(0f, size.height),
-                                end = Offset(size.width, size.height),
-                                strokeWidth = 2.5f
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(end = 8.dp),
+                    modifier = Modifier.scrollbar(listState, false),
+                ) {
+                    items(messages.value.toList(), key = { it.first.id }) {
+                        val (user, messageFlow) = remember { it }
+                        Box(modifier = Modifier.clickable {
+                            viewModel.readMessages(user)
+                            navigator.navigate(MessengerNavTarget.MessageBoard(accessToken, user))
+                        }) {
+                            val unread by viewModel.unreadAmount.collectAsState().value[user]!!.collectAsState()
+                            val message by messageFlow.collectAsState()
+
+                            MessageRow(
+                                imageLoader = viewModel.imageLoader,
+                                withUser = user,
+                                message = message,
+                                unreadAmount = unread,
+                                currentUser = viewModel.currentUser.collectAsState().value!!
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                drawLine(
+                                    brush = Brush.horizontalGradient(
+                                        0f to Color.Transparent,
+                                        0.5f to Color.Black,
+                                        1f to Color.Transparent
+                                    ),
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 2.5f
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
-        is Error ->
-            Snackbar(action = {
-                androidx.compose.material3.Button(onClick = { viewModel.loadRooms() }) {
-                    Text(text = "Retry")
+            is Error -> {
+                val error = stringResource(id = string.error_message, state.errorReason.orEmpty())
+                LaunchedEffect(key1 = "ShowError") {
+                    if (snackbarHostState.showSnackbar(error, "Retry") == ActionPerformed)
+                        reload()
                 }
-            }) {
-                Text(text = stringResource(id = state.errorMsg, state.errorReason.orEmpty()))
             }
-
-        Initialized -> LaunchedEffect("Rooms") {
-            viewModel.loadRooms()
+            Initialized -> LaunchedEffect("Rooms") {
+                viewModel.loadRooms()
+            }
         }
     }
 }
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
-private fun SettingsMenu(viewModel: UserSettingsViewModel) {
+private fun SettingsMenu(
+    viewModel: UserSettingsViewModel,
+    snackbarHostState: SnackbarHostState,
+    reload: () -> Unit
+) {
     Box(modifier = Modifier.defaultMinSize(minHeight = 1.dp)) {
         when (val state = viewModel.uiState.collectAsState().value) {
             Loading -> {}
-            is Error ->
-                Snackbar(action = {
-                    androidx.compose.material3.Button(onClick = { viewModel.loadFields() }) {
-                        Text(text = "Retry")
-                    }
-                }) {
-                    Text(text = stringResource(id = state.errorMsg, state.errorReason.orEmpty()))
+            is Error -> {
+                val error = stringResource(id = state.errorMsg, state.errorReason.orEmpty())
+                LaunchedEffect(key1 = "ShowError") {
+                    if (snackbarHostState.showSnackbar(error, "Retry") == ActionPerformed)
+                        reload()
                 }
+            }
             Initialized -> LaunchedEffect("Load") {
                 viewModel.loadFields()
             }
@@ -222,13 +232,31 @@ fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
                 scaffoldState.conceal()
             }
 
+        val snackbarHostState = remember { SnackbarHostState() }
+        val reload = {
+            settingsViewModel.loadFields()
+            roomsViewModel.loadRooms()
+        }
+
         BackdropScaffold(
             appBar = { TopBar(menuOpen) },
             scaffoldState = scaffoldState,
-            backLayerContent = { SettingsMenu(settingsViewModel) },
-            frontLayerContent = { RoomsBoard(roomsViewModel, navigator, accessToken) },
-            gesturesEnabled = false
-        ) {
-        }
+            backLayerContent = { SettingsMenu(settingsViewModel, snackbarHostState, reload) },
+            frontLayerContent = {
+                RoomsBoard(
+                    roomsViewModel,
+                    navigator,
+                    accessToken,
+                    snackbarHostState,
+                    reload
+                )
+            },
+            gesturesEnabled = false,
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState, snackbar = {
+                    Snackbar(snackbarData = it)
+                })
+            }
+        )
     }
 }

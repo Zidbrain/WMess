@@ -18,13 +18,13 @@ sealed class QueryResult<out T> {
     }
 
     inline fun onFailure(block: (Error) -> Unit): QueryResult<T> {
-        if (this !is Success<T>) block(map { throw Exception() } as Error)
+        if (this !is Success<T>) block(this as Error)
         return this
     }
 
     inline fun getOrElse(block: (Error) -> Nothing): T {
         if (this is Success<T>) return data
-        else block(map { throw Exception() } as Error)
+        else block(this as Error)
     }
 
     data class Success<out T>(val data: T) : QueryResult<T>()

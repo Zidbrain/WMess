@@ -58,6 +58,8 @@ dependencies {
     implementation 'io.coil-kt:coil-base:2.1.0'
     implementation 'io.coil-kt:coil-compose-base:2.1.0'
 
+    implementation 'com.google.accompanist:accompanist-swiperefresh:0.24.13-rc'
+
     def koin_version = "3.1.6"
     implementation "io.insert-koin:koin-core:$koin_version"
     testImplementation "io.insert-koin:koin-test:$koin_version"
