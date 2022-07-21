@@ -2,9 +2,11 @@ package com.example.wmess.viewmodel
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.*
+import coil.*
+import com.example.wmess.R
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
-import com.example.wmess.viewmodel.UserSettingsViewModel.UiState.*
+import com.example.wmess.viewmodel.UiState.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -24,17 +26,16 @@ class UserSettingsFields(private val user: User) {
 }
 
 class UserSettingsViewModel(
-    private val repository: MessengerRepository
+    private val repository: MessengerRepository,
+    val imageLoader: ImageLoader
 ) :
     ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState>(Loading)
+    private val _uiState = MutableStateFlow<UiState>(Initialized)
     val uiState: StateFlow<UiState> = _uiState
 
-    open class UiState {
-        object Loading : UiState()
-        object Loaded : UiState()
-    }
+    lateinit var currentUser: User
+        private set
 
     lateinit var fields: UserSettingsFields
         private set
@@ -46,8 +47,14 @@ class UserSettingsViewModel(
     }
 
     fun loadFields() {
+        _uiState.value = Loading
+
         viewModelScope.launch {
-            fields = UserSettingsFields(repository.getCurrentUser())
+            currentUser = repository.getCurrentUser().getOrElse {
+                _uiState.value = Error(R.string.error_message, it.error)
+                return@launch
+            }
+            fields = UserSettingsFields(currentUser)
             _uiState.value = Loaded
         }
     }

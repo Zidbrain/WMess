@@ -21,16 +21,17 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
-import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
-import com.example.wmess.R
+import coil.compose.*
+import com.example.wmess.R.*
+import com.example.wmess.navigation.*
+import com.example.wmess.navigation.MessengerNavigator.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
-import com.example.wmess.viewmodel.UserSettingsViewModel.UiState.*
+import com.example.wmess.viewmodel.UiState.*
 import org.koin.androidx.compose.*
 import org.koin.core.parameter.*
-import androidx.compose.material3.CircularProgressIndicator as ProgressIndicator
 
 @Composable
 private fun TopBar(isMenuOpen: MutableState<Boolean>) {
@@ -49,12 +50,18 @@ private fun TopBar(isMenuOpen: MutableState<Boolean>) {
 }
 
 @Composable
-private fun RoomsBoard(viewModel: RoomsViewModel) {
-    when (viewModel.uiState.collectAsState().value) {
-        RoomsViewModel.UiState.Loading -> LaunchedEffect("Rooms") {
-            viewModel.loadRooms()
+private fun RoomsBoard(
+    viewModel: RoomsViewModel,
+    navigator: MessengerNavigator,
+    accessToken: String
+) {
+    when (val state = viewModel.uiState.collectAsState().value) {
+        Loading -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
         }
-        RoomsViewModel.UiState.Loaded -> {
+        Loaded -> {
             val messages = viewModel.rooms.collectAsState()
             val listState = rememberLazyListState()
 
@@ -65,16 +72,19 @@ private fun RoomsBoard(viewModel: RoomsViewModel) {
             ) {
                 items(messages.value.toList(), key = { it.first.id }) {
                     val (user, messageFlow) = remember { it }
-                    Box(modifier = Modifier.clickable { viewModel.readMessages(user) }) {
+                    Box(modifier = Modifier.clickable {
+                        viewModel.readMessages(user)
+                        navigator.navigate(MessengerNavTarget.MessageBoard(accessToken, user))
+                    }) {
                         val unread by viewModel.unreadAmount.collectAsState().value[user]!!.collectAsState()
                         val message by messageFlow.collectAsState()
 
                         MessageRow(
-                            avatar = painterResource(id = R.drawable.default_profile_icon_16),
-                            username = user.nickname,
+                            imageLoader = viewModel.imageLoader,
+                            withUser = user,
                             message = message,
                             unreadAmount = unread,
-                            viewModel = viewModel
+                            currentUser = viewModel.currentUser.collectAsState().value!!
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -93,91 +103,109 @@ private fun RoomsBoard(viewModel: RoomsViewModel) {
                 }
             }
         }
+        is Error ->
+            Snackbar(action = {
+                androidx.compose.material3.Button(onClick = { viewModel.loadRooms() }) {
+                    Text(text = "Retry")
+                }
+            }) {
+                Text(text = stringResource(id = state.errorMsg, state.errorReason.orEmpty()))
+            }
+
+        Initialized -> LaunchedEffect("Rooms") {
+            viewModel.loadRooms()
+        }
     }
 }
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
 private fun SettingsMenu(viewModel: UserSettingsViewModel) {
-    when (viewModel.uiState.collectAsState().value) {
-        Loading -> {
-            Box {
-                ProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-            LaunchedEffect("Load") {
+    Box(modifier = Modifier.defaultMinSize(minHeight = 1.dp)) {
+        when (val state = viewModel.uiState.collectAsState().value) {
+            Loading -> {}
+            is Error ->
+                Snackbar(action = {
+                    androidx.compose.material3.Button(onClick = { viewModel.loadFields() }) {
+                        Text(text = "Retry")
+                    }
+                }) {
+                    Text(text = stringResource(id = state.errorMsg, state.errorReason.orEmpty()))
+                }
+            Initialized -> LaunchedEffect("Load") {
                 viewModel.loadFields()
             }
-        }
-        else ->
-            Column(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box {
-                        Image(
-                            painterResource(id = R.drawable.default_profile_icon_16),
-                            null,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(96.dp)
-                        )
-                        IconButton(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .background(Color.White, CircleShape)
-                                .size(36.dp)
-                        ) {
-                            Icon(
-                                painterResource(id = R.drawable.ic_baseline_add_a_photo_24),
-                                null,
-                                modifier = Modifier.offset((-2).dp)
-                            )
-
-                        }
-                    }
-                    RedactTextField(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(CenterVertically),
-                        name = "Nickname",
-                        mutableState = viewModel.fields.nickname,
-                        onConfirmedChange = { viewModel.postFields() },
-                        textStyle = TextStyle(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = TextUnit(20f, TextUnitType.Sp)
-                        )
-                    )
-                }
+            Loaded ->
                 Column(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(5.dp, CenterVertically)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
                 ) {
-                    RedactTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        name = "Status",
-                        mutableState = viewModel.fields.status,
-                        onConfirmedChange = { viewModel.postFields() },
-                    )
-                    RedactTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        name = "Phone Number",
-                        mutableState = viewModel.fields.phoneNumber,
-                        onConfirmedChange = { viewModel.postFields() },
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box {
+                            AsyncImage(
+                                model = viewModel.currentUser.avatarURL,
+                                imageLoader = viewModel.imageLoader,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(96.dp)
+                            )
+                            IconButton(
+                                onClick = { /*TODO*/ },
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .background(Color.White, CircleShape)
+                                    .size(36.dp)
+                            ) {
+                                Icon(
+                                    painterResource(id = drawable.ic_baseline_add_a_photo_24),
+                                    null,
+                                    modifier = Modifier.offset((-2).dp)
+                                )
+
+                            }
+                        }
+                        RedactTextField(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(CenterVertically),
+                            name = "Nickname",
+                            mutableState = viewModel.fields.nickname,
+                            onConfirmedChange = { viewModel.postFields() },
+                            textStyle = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = TextUnit(20f, TextUnitType.Sp)
+                            )
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(5.dp, CenterVertically)
+                    ) {
+                        RedactTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            name = "Status",
+                            mutableState = viewModel.fields.status,
+                            onConfirmedChange = { viewModel.postFields() },
+                        )
+                        RedactTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            name = "Phone Number",
+                            mutableState = viewModel.fields.phoneNumber,
+                            onConfirmedChange = { viewModel.postFields() },
+                        )
+                    }
                 }
-            }
+        }
     }
 }
 
 @Composable
-@Preview
-fun RoomsScreen(accessToken: String = "") {
+fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
     val settingsViewModel: UserSettingsViewModel by viewModel { parametersOf(accessToken) }
     val roomsViewModel: RoomsViewModel by viewModel { parametersOf(accessToken) }
 
@@ -198,7 +226,7 @@ fun RoomsScreen(accessToken: String = "") {
             appBar = { TopBar(menuOpen) },
             scaffoldState = scaffoldState,
             backLayerContent = { SettingsMenu(settingsViewModel) },
-            frontLayerContent = { RoomsBoard(roomsViewModel) },
+            frontLayerContent = { RoomsBoard(roomsViewModel, navigator, accessToken) },
             gesturesEnabled = false
         ) {
         }

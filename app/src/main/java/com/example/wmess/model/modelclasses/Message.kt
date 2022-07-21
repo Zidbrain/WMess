@@ -1,5 +1,6 @@
 package com.example.wmess.model.modelclasses
 
+import com.google.gson.annotations.*
 import java.time.*
 import java.util.*
 
@@ -8,11 +9,12 @@ data class Message(
     val userTo: UUID?,
     val messageType: MessageType,
     val content: String?,
-    val fileHandle: String?,
-    val sentDate: Instant,
+    @SerializedName("fileID") val fileHandle: String?,
+    val dateSent: Instant,
     val isRead: Boolean = false
 )
 
 enum class MessageType {
-    TEXT, FILE
+    @SerializedName("Text") TEXT,
+    @SerializedName("File") FILE
 }

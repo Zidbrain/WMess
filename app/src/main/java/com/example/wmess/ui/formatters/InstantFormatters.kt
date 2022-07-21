@@ -8,6 +8,9 @@ private val recentFormat = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.
 private val weekFormat = DateTimeFormatter.ofPattern("EEE").withZone(ZoneId.systemDefault())
 private val oldFormat = DateTimeFormatter.ofPattern("MMM, dd").withZone(ZoneId.systemDefault())
 
+private val fullFormat =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]").withZone(ZoneId.systemDefault())
+
 fun formatInstant(instant: Instant): String {
     val now = Instant.now()
     val days = ChronoUnit.DAYS.between(instant, now)
@@ -18,3 +21,9 @@ fun formatInstant(instant: Instant): String {
     else
         oldFormat.format(instant)
 }
+
+fun Instant.toFullString(): String =
+    fullFormat.format(this)
+
+fun String.toInstant(): Instant =
+    Instant.from(fullFormat.parse(this))

@@ -103,7 +103,7 @@ fun LoginScreen(navigator: LoginNavigator) {
                 },
                 title = { Text(text = stringResource(R.string.error_title)) },
                 text = {
-                    Text(text = stringResource(state.errorMsg))
+                    Text(text = stringResource(state.errorMsg, state.errorReason.orEmpty()))
                 })
             is LoginScreenUiState.SignedIn -> navigator.NavigateComposable(
                 navTarget = Messenger(

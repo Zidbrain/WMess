@@ -1,6 +1,12 @@
 package com.example.wmess.model.modelclasses
 
-data class RegisterInfo(var login: String, var username: String, var password: String)
+import com.google.gson.annotations.*
+
+data class RegisterInfo(
+    @SerializedName("username") var login: String,
+    @SerializedName("nickname") var username: String,
+    var password: String
+)
 
 sealed class RegisterResult {
     data class Success(val user: User) : RegisterResult()

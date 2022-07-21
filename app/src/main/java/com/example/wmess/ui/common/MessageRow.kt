@@ -1,6 +1,5 @@
 package com.example.wmess.ui.common
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material3.*
@@ -8,23 +7,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.painter.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
+import coil.*
+import coil.compose.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.ui.formatters.*
-import com.example.wmess.viewmodel.*
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
 fun MessageRow(
-    avatar: Painter,
-    username: String,
+    withUser: User,
     message: Message,
     unreadAmount: Int,
-    viewModel: RoomsViewModel
+    currentUser: User,
+    imageLoader: ImageLoader
 ) {
     Row(
         modifier = Modifier
@@ -33,8 +32,10 @@ fun MessageRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            avatar, null,
+        AsyncImage(
+            model = withUser.avatarURL,
+            contentDescription = null,
+            imageLoader = imageLoader,
             modifier = Modifier
                 .clip(CircleShape)
                 .size(80.dp)
@@ -45,7 +46,7 @@ fun MessageRow(
             Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     modifier = Modifier.align(Alignment.TopStart),
-                    text = username,
+                    text = withUser.nickname,
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = TextUnit(24f, TextUnitType.Sp)
@@ -56,7 +57,7 @@ fun MessageRow(
                 Text(
                     modifier = Modifier
                         .align(Alignment.TopEnd),
-                    text = formatInstant(message.sentDate),
+                    text = formatInstant(message.dateSent),
                     style = TextStyle(
                         color = Color.Gray,
                         fontSize = TextUnit(12f, TextUnitType.Sp)
@@ -67,7 +68,7 @@ fun MessageRow(
                 Text(
                     modifier = Modifier.align(Alignment.CenterStart),
                     text = buildAnnotatedString {
-                        if (message.userFrom == viewModel.currentUser.collectAsState().value!!.id)
+                        if (message.userFrom == currentUser.id)
                             withStyle(SpanStyle(color = Color.Blue)) {
                                 append("You: ")
                             }

@@ -31,7 +31,7 @@ class TestLoginRepository : LoginRepository {
 
     override suspend fun login(loginInfo: LoginInfo): LoginResult {
         if (users[loginInfo.login]?.second == loginInfo.password) {
-            return LoginResult.Success("login: ${loginInfo.login}\npassword: ${loginInfo.password}")
+            return LoginResult.Success("${loginInfo.login}+${loginInfo.password}")
         }
         return LoginResult.UserNotFound
     }

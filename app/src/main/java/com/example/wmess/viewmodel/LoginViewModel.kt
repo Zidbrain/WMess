@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.*
 
 sealed class LoginScreenUiState {
     object SignedOut : LoginScreenUiState()
-    data class Error(@StringRes val errorMsg: Int) : LoginScreenUiState()
+    data class Error(@StringRes val errorMsg: Int, val errorReason: String?) : LoginScreenUiState()
     data class SignedIn(val accessToken: String) : LoginScreenUiState()
     object InProgress : LoginScreenUiState()
 }
@@ -37,8 +37,8 @@ class LoginViewModel(
             _uiState.value =
                 when (val result = repository.login(LoginInfo(login.value, password.value))) {
                     is LoginResult.Success -> LoginScreenUiState.SignedIn(result.accessToken)
-                    is LoginResult.Error -> LoginScreenUiState.Error(R.string.error_message)
-                    LoginResult.UserNotFound -> LoginScreenUiState.Error(R.string.wrong_login_error)
+                    is LoginResult.Error -> LoginScreenUiState.Error(R.string.error_message, result.error)
+                    LoginResult.UserNotFound -> LoginScreenUiState.Error(R.string.wrong_login_error, null)
                 }
         }
     }

@@ -8,8 +8,6 @@ import androidx.navigation.compose.*
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.LoginNavigator.*
 
-const val BASE_URL = "https://localhost/api/"
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

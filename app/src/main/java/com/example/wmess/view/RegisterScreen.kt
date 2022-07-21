@@ -8,13 +8,13 @@ import androidx.compose.ui.graphics.vector.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.*
 import androidx.constraintlayout.compose.*
-import androidx.lifecycle.viewmodel.compose.*
 import com.example.wmess.R
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
+import org.koin.androidx.compose.*
 
 @Composable
 private fun InputFields(viewModel: RegisterViewModel) {

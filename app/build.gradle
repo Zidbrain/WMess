@@ -51,6 +51,13 @@ android {
 
 dependencies {
 
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+
+    implementation 'io.coil-kt:coil-base:2.1.0'
+    implementation 'io.coil-kt:coil-compose-base:2.1.0'
+
     def koin_version = "3.1.6"
     implementation "io.insert-koin:koin-core:$koin_version"
     testImplementation "io.insert-koin:koin-test:$koin_version"

@@ -1,23 +1,21 @@
 package com.example.wmess.viewmodel
 
 import androidx.lifecycle.*
+import coil.*
+import com.example.wmess.*
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
-import com.example.wmess.viewmodel.RoomsViewModel.UiState.*
+import com.example.wmess.viewmodel.UiState.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 class RoomsViewModel(
-    private val repository: MessengerRepository
+    private val repository: MessengerRepository,
+    val imageLoader: ImageLoader
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState>(Loading)
+    private val _uiState = MutableStateFlow<UiState>(Initialized)
     val uiState: StateFlow<UiState> = _uiState
-
-    open class UiState {
-        object Loading : UiState()
-        object Loaded : UiState()
-    }
 
     private val _currentUser = MutableStateFlow(null as User?)
     val currentUser: StateFlow<User?> = _currentUser
@@ -35,19 +33,26 @@ class RoomsViewModel(
         _unreadAmount.value[user]?.update { 0 }
     }
 
-    fun loadRooms() {
-        viewModelScope.launch {
-            _currentUser.value = repository.getCurrentUser()
+    private fun setError(it: QueryResult.Error) {
+        _uiState.value = Error(R.string.error_message, it.error)
+    }
 
-            val history = repository.getHistoryByUsers().asIterable()
+    fun loadRooms() {
+        _uiState.value = Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            _currentUser.value =
+                repository.getCurrentUser().getOrElse { setError(it); return@launch }
+
+            val history = repository.getHistoryByUsers().getOrElse { setError(it); return@launch }
+                .asIterable()
             _rooms.value = history.associate { (user, messages) ->
                 user to MutableStateFlow(messages.last())
             }
             _unreadAmount.value = history.associate { (user, messages) ->
-                user to MutableStateFlow(messages.count { !it.isRead })
+                user to MutableStateFlow(messages.count { it.userTo == _currentUser.value!!.id && !it.isRead })
             }
 
-            repository.notifications
+            repository.notifications.getOrElse { setError(it); return@launch }
                 .onEach { (user, message) ->
                     _rooms.value[user]?.update { message }
                     _unreadAmount.value[user]?.update { amount -> amount + 1 }
