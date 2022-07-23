@@ -2,22 +2,19 @@ package com.example.wmess.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.unit.*
+import androidx.constraintlayout.compose.*
+import androidx.lifecycle.viewmodel.compose.*
 import com.example.wmess.R
-import com.example.wmess.Screens
-import com.example.wmess.ui.common.TextInputField
-import com.example.wmess.ui.theme.WMessTheme
-import com.example.wmess.viewmodel.RegisterScreenUiState
-import com.example.wmess.viewmodel.RegisterViewModel
+import com.example.wmess.navigation.*
+import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
+import com.example.wmess.ui.common.*
+import com.example.wmess.ui.theme.*
+import com.example.wmess.viewmodel.*
 
 @Composable
 private fun InputFields(viewModel: RegisterViewModel) {
@@ -53,11 +50,11 @@ private fun RegisterButton(viewModel: RegisterViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(navController: NavController) {
-    val viewModel = hiltViewModel<RegisterViewModel>()
+fun RegisterScreen(navigator: LoginNavigator) {
+    val viewModel: RegisterViewModel by viewModel()
 
     WMessTheme {
-        val state = viewModel.uiState.value
+        val state = viewModel.uiState.collectAsState().value
 
         when (state) {
             is RegisterScreenUiState.Error -> {
@@ -78,7 +75,11 @@ fun RegisterScreen(navController: NavController) {
                     text = { Text(text = stringResource(state.errorMsg)) }
                 )
             }
-            is RegisterScreenUiState.Register -> navController.navigate(Screens.Messenger(state.accessToken)) { popUpTo(0) }
+            is RegisterScreenUiState.Register -> navigator.NavigateComposable(
+                navTarget = Messenger(
+                    state.accessToken
+                )
+            ) { popUpTo(0) }
             else -> {}
         }
 

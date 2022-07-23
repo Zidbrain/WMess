@@ -1,12 +1,10 @@
 package com.example.wmess.model
 
 import com.example.wmess.model.modelclasses.*
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import java.util.*
-import javax.inject.Singleton
 
-@Singleton
-class TestRepository : WMessRepository {
+class TestLoginRepository : LoginRepository {
     private val users = mutableMapOf(
         Pair(
             "user",
@@ -32,8 +30,6 @@ class TestRepository : WMessRepository {
     }
 
     override suspend fun login(loginInfo: LoginInfo): LoginResult {
-        delay(1000)
-
         if (users[loginInfo.login]?.second == loginInfo.password) {
             return LoginResult.Success("login: ${loginInfo.login}\npassword: ${loginInfo.password}")
         }

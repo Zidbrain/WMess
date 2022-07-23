@@ -2,26 +2,20 @@ package com.example.wmess.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.unit.*
+import androidx.constraintlayout.compose.*
 import com.example.wmess.R
-import com.example.wmess.Screens
-import com.example.wmess.ui.common.TextInputField
-import com.example.wmess.ui.theme.WMessTheme
-import com.example.wmess.viewmodel.LoginScreenUiState
-import com.example.wmess.viewmodel.LoginViewModel
+import com.example.wmess.navigation.*
+import com.example.wmess.navigation.LoginNavigator.LoginNavTarget.*
+import com.example.wmess.ui.common.*
+import com.example.wmess.ui.theme.*
+import com.example.wmess.viewmodel.*
+import org.koin.androidx.compose.*
 
 @Composable
 private fun InputFields(viewModel: LoginViewModel) {
@@ -63,7 +57,7 @@ private fun InputFields(viewModel: LoginViewModel) {
 }
 
 @Composable
-private fun Buttons(viewModel: LoginViewModel, navController: NavController) {
+private fun Buttons(viewModel: LoginViewModel, navigator: LoginNavigator) {
     Column(
         modifier = Modifier
             .wrapContentSize(),
@@ -77,7 +71,7 @@ private fun Buttons(viewModel: LoginViewModel, navController: NavController) {
             Text(stringResource(R.string.sign_in))
         }
         ElevatedButton(
-            onClick = { navController.navigate("register") },
+            onClick = { navigator.navigate(Register) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.register))
@@ -87,11 +81,11 @@ private fun Buttons(viewModel: LoginViewModel, navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
-    val viewModel: LoginViewModel = hiltViewModel()
+fun LoginScreen(navigator: LoginNavigator) {
+    val viewModel: LoginViewModel by viewModel()
     WMessTheme {
 
-        val state = viewModel.uiState.value
+        val state = viewModel.uiState.collectAsState().value
 
         when (state) {
             is LoginScreenUiState.Error -> AlertDialog(
@@ -111,7 +105,11 @@ fun LoginScreen(navController: NavController) {
                 text = {
                     Text(text = stringResource(state.errorMsg))
                 })
-            is LoginScreenUiState.SignedIn -> navController.navigate(Screens.Messenger(state.accessToken)) { popUpTo(0) }
+            is LoginScreenUiState.SignedIn -> navigator.NavigateComposable(
+                navTarget = Messenger(
+                    state.accessToken
+                )
+            ) { popUpTo(0) }
             else -> {}
         }
 
@@ -138,7 +136,7 @@ fun LoginScreen(navController: NavController) {
                     ),
                 ) {
                     InputFields(viewModel = viewModel)
-                    Buttons(viewModel = viewModel, navController = navController)
+                    Buttons(viewModel = viewModel, navigator = navigator)
                 }
 
                 if (state is LoginScreenUiState.InProgress) {
