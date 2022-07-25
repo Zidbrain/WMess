@@ -25,7 +25,14 @@ const val BASE_URL = "https://zdmsg.duckdns.org/api/"
 
 val testModule = module {
     single<LoginRepository> { LoginRepositoryImpl(get()) }
-    factory<MessengerRepository> { MessengerRepositoryImpl(get { it }, it.get()) }
+    factory<MessengerRepository> {
+        MessengerRepositoryImpl(
+            get { it },
+            get(named(AUTH_CLIENT)),
+            get(),
+            it.get()
+        )
+    }
 
     viewModel { LoginViewModel(get()) }
     viewModel { CachedLoginViewModel(get()) }
@@ -42,25 +49,23 @@ val testModule = module {
     }
 
     single {
-        GsonConverterFactory.create(
-            Gson().newBuilder()
-                .registerTypeAdapter(Instant::class.java, object : TypeAdapter<Instant>() {
-                    override fun write(out: JsonWriter?, value: Instant?) {
-                        out!!.value(value!!.toFullString())
-                    }
+        Gson().newBuilder()
+            .registerTypeAdapter(Instant::class.java, object : TypeAdapter<Instant>() {
+                override fun write(out: JsonWriter?, value: Instant?) {
+                    out!!.value(value!!.toFullString())
+                }
 
-                    override fun read(`in`: JsonReader?): Instant {
-                        return `in`!!.nextString().toInstant()
-                    }
+                override fun read(`in`: JsonReader?): Instant {
+                    return `in`!!.nextString().toInstant()
+                }
 
-                }).create()
-        )
+            }).setLenient().create()
     }
 
     single {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(get<GsonConverterFactory>())
+            .addConverterFactory(GsonConverterFactory.create(get()))
     }
 
     single(named(NO_AUTH_CLIENT)) { OkHttpClient().newBuilder().build() }
@@ -91,4 +96,6 @@ val testModule = module {
     }
 
     single { get<Retrofit>(named(AUTH_CLIENT)) { it }.create(MessengerApi::class.java) }
+
+    single { MessengerWebSocketListener(get()) }
 }

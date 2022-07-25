@@ -65,34 +65,45 @@ private fun RoomsBoard(
         state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
         onRefresh = reload
     ) {
-        when (val state = viewModel.uiState.collectAsState().value) {
+        when (val state = viewModel.uiState) {
             Loading -> isRefreshing = true
             Loaded -> {
-                val messages = viewModel.rooms.collectAsState()
+                val messages = viewModel.rooms
                 val listState = rememberLazyListState()
 
                 isRefreshing = false
+
+                val connectionError = viewModel.connectionError
+                if (connectionError != null) {
+                    LaunchedEffect("Connection Snackbar") {
+                        if (snackbarHostState.showSnackbar(
+                                connectionError.message.orEmpty(),
+                                "Retry"
+                            ) == ActionPerformed
+                        )
+                            reload()
+                    }
+                }
 
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(end = 8.dp),
                     modifier = Modifier.scrollbar(listState, false),
                 ) {
-                    items(messages.value.toList(), key = { it.first.id }) {
-                        val (user, messageFlow) = remember { it }
+                    items(messages.toList(), key = { it.first.id }) {
+                        val (user, messageInfo) = it
                         Box(modifier = Modifier.clickable {
                             viewModel.readMessages(user)
                             navigator.navigate(MessengerNavTarget.MessageBoard(accessToken, user))
                         }) {
-                            val unread by viewModel.unreadAmount.collectAsState().value[user]!!.collectAsState()
-                            val message by messageFlow.collectAsState()
+                            val (message, unread) = messageInfo
 
                             MessageRow(
                                 imageLoader = viewModel.imageLoader,
                                 withUser = user,
                                 message = message,
                                 unreadAmount = unread,
-                                currentUser = viewModel.currentUser.collectAsState().value!!
+                                currentUser = viewModel.currentUser!!
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -112,6 +123,7 @@ private fun RoomsBoard(
                 }
             }
             is Error -> {
+                isRefreshing = false
                 val error = stringResource(id = string.error_message, state.errorReason.orEmpty())
                 LaunchedEffect(key1 = "ShowError") {
                     if (snackbarHostState.showSnackbar(error, "Retry") == ActionPerformed)
@@ -119,6 +131,7 @@ private fun RoomsBoard(
                 }
             }
             Initialized -> LaunchedEffect("Rooms") {
+                viewModel.connect()
                 viewModel.loadRooms()
             }
         }
@@ -236,6 +249,7 @@ fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
         val reload = {
             settingsViewModel.loadFields()
             roomsViewModel.loadRooms()
+            roomsViewModel.connect()
         }
 
         BackdropScaffold(

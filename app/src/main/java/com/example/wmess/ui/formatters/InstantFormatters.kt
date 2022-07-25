@@ -9,7 +9,7 @@ private val weekFormat = DateTimeFormatter.ofPattern("EEE").withZone(ZoneId.syst
 private val oldFormat = DateTimeFormatter.ofPattern("MMM, dd").withZone(ZoneId.systemDefault())
 
 private val fullFormat =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]").withZone(ZoneId.systemDefault())
+    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSSS'Z']").withZone(ZoneId.systemDefault())
 
 fun formatInstant(instant: Instant): String {
     val now = Instant.now()

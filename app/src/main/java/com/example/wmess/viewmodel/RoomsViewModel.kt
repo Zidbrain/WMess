@@ -1,65 +1,83 @@
 package com.example.wmess.viewmodel
 
+import androidx.compose.runtime.*
 import androidx.lifecycle.*
 import coil.*
 import com.example.wmess.*
+import com.example.wmess.R
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.UiState.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 class RoomsViewModel(
     private val repository: MessengerRepository,
     val imageLoader: ImageLoader
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState>(Initialized)
-    val uiState: StateFlow<UiState> = _uiState
+    data class MessageInfo(val lastMessage: Message, val unreadAmount: Int) {
+        fun addMessage(message: Message): MessageInfo =
+            MessageInfo(message, unreadAmount + 1)
 
-    private val _currentUser = MutableStateFlow(null as User?)
-    val currentUser: StateFlow<User?> = _currentUser
+        fun readAll(): MessageInfo =
+            MessageInfo(lastMessage, 0)
+    }
 
-    private val _rooms = MutableStateFlow(emptyMap<User, MutableStateFlow<Message>>())
-    val rooms: StateFlow<Map<User, StateFlow<Message>>> = _rooms
+    var uiState by mutableStateOf<UiState>(Initialized)
+        private set
 
-    private val _unreadAmount = MutableStateFlow(emptyMap<User, MutableStateFlow<Int>>())
-    val unreadAmount: StateFlow<Map<User, StateFlow<Int>>> = _unreadAmount
+    var currentUser by mutableStateOf<User?>(null)
+        private set
+
+    private val _rooms = mutableStateMapOf<User, MessageInfo>()
+    var rooms: Map<User, MessageInfo> = _rooms
+
+    var connectionError by mutableStateOf<Throwable?>(null)
+        private set
 
     /**
      * Temporary
      */
     fun readMessages(user: User) {
-        _unreadAmount.value[user]?.update { 0 }
+        _rooms.replace(user) { it.readAll() }
     }
 
     private fun setError(it: QueryResult.Error) {
-        _uiState.value = Error(R.string.error_message, it.error)
+        uiState = Error(R.string.error_message, it.error)
+    }
+
+    private var connectionJob: Job? = null
+
+    fun connect() {
+        if (connectionJob != null)
+            connectionJob!!.cancel(null)
+
+        connectionJob = repository.notifications.getOrElse { setError(it); return@connect }
+            .onEach { (user, message) ->
+                _rooms.replaceOrPut(user, MessageInfo(message, 1)) { it.addMessage(message) }
+            }
+            .onCompletion { connectionError = it }
+            .cancellable()
+            .launchIn(viewModelScope)
     }
 
     fun loadRooms() {
-        _uiState.value = Loading
+        uiState = Loading
         viewModelScope.launch(Dispatchers.IO) {
-            _currentUser.value =
+            currentUser =
                 repository.getCurrentUser().getOrElse { setError(it); return@launch }
 
             val history = repository.getHistoryByUsers().getOrElse { setError(it); return@launch }
                 .asIterable()
-            _rooms.value = history.associate { (user, messages) ->
-                user to MutableStateFlow(messages.last())
-            }
-            _unreadAmount.value = history.associate { (user, messages) ->
-                user to MutableStateFlow(messages.count { it.userTo == _currentUser.value!!.id && !it.isRead })
-            }
+            _rooms.clear()
+            _rooms.putAll(history.associate { (user, messages) ->
+                user to MessageInfo(messages.first(), 0)
+            })
 
-            repository.notifications.getOrElse { setError(it); return@launch }
-                .onEach { (user, message) ->
-                    _rooms.value[user]?.update { message }
-                    _unreadAmount.value[user]?.update { amount -> amount + 1 }
-                }
-                .launchIn(viewModelScope)
-
-            _uiState.value = Loaded
+            uiState = Loaded
         }
     }
 }
