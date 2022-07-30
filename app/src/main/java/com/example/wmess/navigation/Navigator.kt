@@ -39,4 +39,10 @@ abstract class Navigator<in T : NavTarget>(
             (NavBackStackEntry) -> Unit
     ): Unit =
         composable(target.route, arguments, deepLinks, content)
+
+    fun popBackStack(): Boolean =
+        navController.popBackStack()
+
+    protected fun NavBackStackEntry.getArgument(id: String): String =
+        this.arguments!![id]!! as String
 }

@@ -11,6 +11,7 @@ import com.google.gson.stream.*
 import okhttp3.*
 import org.koin.android.ext.koin.*
 import org.koin.androidx.viewmodel.dsl.*
+import org.koin.core.module.*
 import org.koin.core.qualifier.*
 import org.koin.dsl.*
 import retrofit2.*
@@ -24,58 +25,26 @@ const val NO_AUTH_CLIENT = "noAuth"
 const val BASE_URL = "https://zdmsg.duckdns.org/api/"
 
 val testModule = module {
-    single<LoginRepository> { LoginRepositoryImpl(get()) }
-    factory<MessengerRepository> {
-        MessengerRepositoryImpl(
-            get { it },
-            get(named(AUTH_CLIENT)),
-            get(),
-            it.get()
-        )
-    }
+    provideRepositories()
+    provideViewModels()
 
-    viewModel { LoginViewModel(get()) }
-    viewModel { CachedLoginViewModel(get()) }
-    viewModel { RegisterViewModel(get()) }
-    viewModel { RoomsViewModel(get { it }, get { it }) }
-    viewModel { UserSettingsViewModel(get { it }, get { it }) }
+    provideImageLoader()
+    provideGson()
 
-    single {
-        ImageLoader.Builder(androidContext())
-            .crossfade(true)
-            .okHttpClient(get<OkHttpClient>(named(AUTH_CLIENT)) { it })
-            .error(R.drawable.ic_baseline_error_outline_24)
-            .build()
-    }
+    provideRetrofitBuilder()
+    provideOkHttpClient()
+    provideRetrofit()
+    provideApi()
 
-    single {
-        Gson().newBuilder()
-            .registerTypeAdapter(Instant::class.java, object : TypeAdapter<Instant>() {
-                override fun write(out: JsonWriter?, value: Instant?) {
-                    out!!.value(value!!.toFullString())
-                }
+    provideWebSocket()
+}
 
-                override fun read(`in`: JsonReader?): Instant {
-                    return `in`!!.nextString().toInstant()
-                }
+fun Module.provideWebSocket() {
+    single { MessengerWebSocketListener(get()) }
+}
 
-            }).setLenient().create()
-    }
-
-    single {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create(get()))
-    }
-
+fun Module.provideOkHttpClient() {
     single(named(NO_AUTH_CLIENT)) { OkHttpClient().newBuilder().build() }
-    single(named(NO_AUTH_CLIENT)) {
-        get<Retrofit.Builder>()
-            .client(get(named(NO_AUTH_CLIENT)))
-            .build()
-    }
-
-    single { get<Retrofit>(named(NO_AUTH_CLIENT)).create(AuthApi::class.java) }
 
     single(named(AUTH_CLIENT)) { params ->
         OkHttpClient().newBuilder().addInterceptor {
@@ -89,13 +58,80 @@ val testModule = module {
             .cache(Cache(File("/cache/http_cache"), 2 * 1024L * 1024L))
             .build()
     }
+}
+
+fun Module.provideApi() {
+    single { get<Retrofit>(named(NO_AUTH_CLIENT)).create(AuthApi::class.java) }
+    single { get<Retrofit>(named(AUTH_CLIENT)) { it }.create(MessengerApi::class.java) }
+}
+
+fun Module.provideRetrofit() {
+    single(named(NO_AUTH_CLIENT)) {
+        get<Retrofit.Builder>()
+            .client(get(named(NO_AUTH_CLIENT)))
+            .build()
+    }
+
     single(named(AUTH_CLIENT)) {
         get<Retrofit.Builder>()
             .client(get(named(AUTH_CLIENT)) { it })
             .build()
     }
+}
 
-    single { get<Retrofit>(named(AUTH_CLIENT)) { it }.create(MessengerApi::class.java) }
+fun Module.provideRetrofitBuilder() {
+    single {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create(get()))
+    }
+}
 
-    single { MessengerWebSocketListener(get()) }
+fun Module.provideGson() {
+    single {
+        Gson().newBuilder()
+            .registerTypeAdapter(Instant::class.java, object : TypeAdapter<Instant>() {
+                override fun write(out: JsonWriter?, value: Instant?) {
+                    out!!.value(value!!.toFullString())
+                }
+
+                override fun read(`in`: JsonReader?): Instant {
+                    return `in`!!.nextString().toInstant()
+                }
+
+            }).setLenient().create()
+    }
+}
+
+fun Module.provideImageLoader() {
+    single {
+        ImageLoader.Builder(androidContext())
+            .crossfade(true)
+            .okHttpClient(get<OkHttpClient>(named(AUTH_CLIENT)) { it })
+            .error(R.drawable.ic_baseline_error_outline_24)
+            .build()
+    }
+}
+
+fun Module.provideRepositories() {
+    single<LoginRepository> { LoginRepositoryImpl(get()) }
+    single<MessengerRepository> {
+        MessengerRepositoryImpl(
+            get { it },
+            get(named(AUTH_CLIENT)),
+            get(),
+            get(),
+            it.get()
+        )
+    }
+}
+
+fun Module.provideViewModels() {
+    viewModel { LoginViewModel(get()) }
+    viewModel { CachedLoginViewModel(get()) }
+    viewModel { RegisterViewModel(get()) }
+    viewModel { RoomsViewModel(get { it }, get { it }) }
+    viewModel { UserSettingsViewModel(get { it }, get { it }) }
+    viewModel { MessageBoardViewModel(get { it }, it[1], it[2]) }
+    viewModel { CreateRoomViewModel(get() { it }, it.get()) }
 }

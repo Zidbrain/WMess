@@ -19,8 +19,8 @@ class RoomsViewModel(
 ) : ViewModel() {
 
     data class MessageInfo(val lastMessage: Message, val unreadAmount: Int) {
-        fun addMessage(message: Message): MessageInfo =
-            MessageInfo(message, unreadAmount + 1)
+        fun addMessage(message: Message, addUnread: Int = 1): MessageInfo =
+            MessageInfo(message, unreadAmount + addUnread)
 
         fun readAll(): MessageInfo =
             MessageInfo(lastMessage, 0)
@@ -51,30 +51,42 @@ class RoomsViewModel(
 
     private var connectionJob: Job? = null
 
+    fun reconnect() {
+        repository.reconnect()
+        connect()
+    }
+
     fun connect() {
         if (connectionJob != null)
             connectionJob!!.cancel(null)
 
-        connectionJob = repository.notifications.getOrElse { setError(it); return@connect }
+        connectionJob = repository.notifications.getOrElse { setError(it); return }
             .onEach { (user, message) ->
-                _rooms.replaceOrPut(user, MessageInfo(message, 1)) { it.addMessage(message) }
+                _rooms.replaceOrPut(
+                    user,
+                    MessageInfo(message, if (currentUser!!.id == message.userFrom) 0 else 1)
+                ) { it.addMessage(message, if (currentUser!!.id == message.userFrom) 0 else 1) }
             }
-            .onCompletion { connectionError = it }
+            .onCompletion {
+                if (it !is CancellationException) connectionError = it
+                uiState = Initialized
+            }
             .cancellable()
             .launchIn(viewModelScope)
     }
 
     fun loadRooms() {
         uiState = Loading
+
         viewModelScope.launch(Dispatchers.IO) {
             currentUser =
                 repository.getCurrentUser().getOrElse { setError(it); return@launch }
 
             val history = repository.getHistoryByUsers().getOrElse { setError(it); return@launch }
-                .asIterable()
+                .entries
             _rooms.clear()
             _rooms.putAll(history.associate { (user, messages) ->
-                user to MessageInfo(messages.first(), 0)
+                user to MessageInfo(messages.maxBy { it.dateSent }, 0)
             })
 
             uiState = Loaded

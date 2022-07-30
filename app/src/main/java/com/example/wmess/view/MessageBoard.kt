@@ -12,40 +12,26 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.*
-import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.constraintlayout.compose.*
 import com.example.wmess.R
-import com.example.wmess.model.modelclasses.*
-import com.example.wmess.model.modelclasses.MessageType.*
 import com.example.wmess.ui.common.*
-import java.time.*
+import com.example.wmess.viewmodel.*
+import kotlinx.coroutines.flow.*
+import org.koin.androidx.compose.*
+import org.koin.core.parameter.*
 import java.util.*
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
-@Preview
-fun MessageBoard() {
-    val currentUser = UUID.randomUUID()
-    val talkingTo = UUID.randomUUID()
-    val messages = listOf(
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(
-            talkingTo,
+fun MessageBoard(accessToken: String, currentUser: UUID, withUser: UUID) {
+    val viewModel: MessageBoardViewModel by viewModel {
+        parametersOf(
+            accessToken,
             currentUser,
-            TEXT,
-            "MESSAGE 2asldkalskdlaskdlaskdlaksldkawodkwakoskd;kd;laddkwokdowka😀😁😁",
-            null,
-            Instant.now(),
-            true
-        ),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-        Message(currentUser, talkingTo, TEXT, "MESSAGE 1", null, Instant.now(), true),
-    )
+            withUser
+        )
+    }
 
     ConstraintLayout(
         modifier = Modifier
@@ -60,6 +46,12 @@ fun MessageBoard() {
         val lazyListState = rememberLazyListState()
         val (column, textInput) = createRefs()
 
+        LaunchedEffect(Unit) {
+            snapshotFlow { viewModel.history.lastIndex }
+                .filter { it >= 0 }
+                .collect { lazyListState.animateScrollToItem(it) }
+        }
+
         LazyColumn(
             state = lazyListState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -72,9 +64,9 @@ fun MessageBoard() {
                 }
                 .scrollbar(lazyListState, false)
         ) {
-            items(messages) {
+            items(viewModel.history) {
                 Box(Modifier.fillMaxWidth()) {
-                    MessageBlob(isReceivedType = it.userFrom == talkingTo, message = it)
+                    MessageBlob(isReceivedType = it.userFrom == withUser, message = it)
                 }
             }
         }
@@ -93,7 +85,7 @@ fun MessageBoard() {
                     end.linkTo(send.start)
                     width = Dimension.fillToConstraints
                 },
-                value = "", onValueChange = { /*TODO*/ },
+                value = viewModel.textInput, onValueChange = { viewModel.textInput = it },
                 placeholder = { Text(text = "Message") },
                 textStyle = TextStyle(fontSize = TextUnit(16f, TextUnitType.Sp)),
                 shape = RoundedCornerShape(24.dp),
@@ -120,7 +112,7 @@ fun MessageBoard() {
                     .padding(start = 12.dp)
                     .background(Color(0xFF3949AB), CircleShape)
                     .size(58.dp),
-                onClick = { /*TODO*/ }) {
+                onClick = viewModel::send) {
                 Icon(Icons.Default.Send, null, tint = Color.White)
             }
         }

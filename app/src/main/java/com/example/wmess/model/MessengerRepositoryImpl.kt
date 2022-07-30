@@ -5,6 +5,8 @@ import com.example.wmess.QueryResult.*
 import com.example.wmess.di.*
 import com.example.wmess.model.api.*
 import com.example.wmess.model.modelclasses.*
+import com.google.gson.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.*
 import java.util.*
@@ -14,18 +16,21 @@ class MessengerRepositoryImpl(
     private val messengerApi: MessengerApi,
     private val client: OkHttpClient,
     private val webSocketListener: MessengerWebSocketListener,
+    private val gson: Gson,
     accessToken: String
 ) :
     MessengerRepository(accessToken) {
-    private lateinit var users: Map<UUID, User>
+    private var users: Map<UUID, User> = mapOf()
     private var currentUser: User? = null
 
-    private lateinit var webSocket: WebSocket
+    private var webSocket: WebSocket? = null
 
-    override suspend fun getUserById(id: UUID): QueryResult<User?> {
-        if (!this::users.isInitialized)
+    override suspend fun getUserById(id: UUID): QueryResult<User> {
+        val ret = users.getOrElse(id) {
             getUsers().onFailure { return it }
-        return resultOf(users[id])
+            users[id]
+        }
+        return if (ret != null) resultOf(ret) else Error("User not found")
     }
 
     override suspend fun getCurrentUser(): QueryResult<User> =
@@ -59,29 +64,57 @@ class MessengerRepositoryImpl(
         }
     }
 
+    override suspend fun getHistoryWith(uuid: UUID): QueryResult<List<Message>> =
+        safeCall { messengerApi.getHistoryWith(uuid) }
+
+    private fun createSocket(): WebSocket =
+        client.newBuilder()
+            .pingInterval(20, SECONDS)
+            .build()
+            .newWebSocket(
+                Request.Builder()
+                    .url("${BASE_URL}messenger/connect?accessToken=$accessToken")
+                    .build(),
+                webSocketListener
+            )
+
+    private fun openWebSocket(): WebSocket {
+        if (webSocket != null)
+            return webSocket!!
+
+        webSocket = createSocket()
+        return webSocket!!
+    }
+
+    override fun reconnect() {
+        if (webSocket != null)
+            webSocket!!.close(1001, null)
+        webSocket = createSocket()
+    }
+
     override val notifications: QueryResult<Flow<Pair<User, Message>>>
         get() {
-            if (this::webSocket.isInitialized && webSocketListener.isListening)
-                webSocket.close(1001, null)
-            webSocket = client.newBuilder()
-                .pingInterval(20, SECONDS)
-                .build()
-                .newWebSocket(
-                    Request.Builder()
-                        .url("${BASE_URL}messenger/connect?accessToken=$accessToken")
-                        .build(),
-                    webSocketListener
-                )
-            return resultOf(webSocketListener.socketChannel.receiveAsFlow()
+            openWebSocket()
+            return resultOf(webSocketListener.socketFlow
                 .map {
-                    users.getOrElse(it.userFrom!!) {
-                        (getUsers() as Success<List<User>>).data.first { user -> user.id == it.userFrom }
+                    val checkIndex = if (it.userFrom!! == currentUser!!.id) it.userTo!! else it.userFrom
+                    users.getOrElse(checkIndex) {
+                        getUsers()
+                        users[checkIndex]!!
                     } to it
                 }.onCompletion {
-                    if (it == null)
-                        webSocket.close(1001, null)
-                    else
-                        webSocket.close(1002, null)
-                })
+                    if (it !is CancellationException) {
+                        webSocket!!.close(1001, null)
+                        webSocket = null
+                    }
+                }
+            )
         }
+
+    override fun send(message: Message): QueryResult<Unit> {
+        return if (openWebSocket().send(gson.toJson(message))) {
+            webSocketListener.sendToFlow(message)
+            resultOf(Unit)
+        } else Error("Error sending the message")
+    }
 }

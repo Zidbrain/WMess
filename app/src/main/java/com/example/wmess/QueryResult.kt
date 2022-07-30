@@ -27,6 +27,11 @@ sealed class QueryResult<out T> {
         else block(this as Error)
     }
 
+    inline fun switch(onSuccess: (T) -> Unit, onFailure: (Error) -> Unit) {
+        if (this is Success<T>) onSuccess(data)
+        else onFailure(this as Error)
+    }
+
     data class Success<out T>(val data: T) : QueryResult<T>()
     class Unauthorized : ErrorCode(401, "Unauthorized")
     open class ErrorCode(val errorCode: Int, error: String) : Error(error)

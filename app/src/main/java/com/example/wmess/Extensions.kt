@@ -26,7 +26,11 @@ inline fun <K, V> MutableMap<K, V>.replace(key: K, transformation: (oldValue: V)
     return false
 }
 
-inline fun <K, V> MutableMap<K, V>.replaceOrPut(key: K, newValue: V, transformation: (oldValue: V) -> V) {
+inline fun <K, V> MutableMap<K, V>.replaceOrPut(
+    key: K,
+    newValue: V,
+    transformation: (oldValue: V) -> V
+) {
     val value = this[key]
     if (value != null)
         this[key] = transformation(value)

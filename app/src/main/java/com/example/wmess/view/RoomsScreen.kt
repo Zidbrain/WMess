@@ -27,6 +27,7 @@ import coil.compose.*
 import com.example.wmess.R.*
 import com.example.wmess.navigation.*
 import com.example.wmess.navigation.MessengerNavigator.*
+import com.example.wmess.navigation.MessengerNavigator.MessengerNavTarget.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
 import com.example.wmess.viewmodel.*
@@ -36,7 +37,12 @@ import org.koin.androidx.compose.*
 import org.koin.core.parameter.*
 
 @Composable
-private fun TopBar(isMenuOpen: MutableState<Boolean>) {
+private fun TopBar(
+    accessToken: String,
+    navigator: MessengerNavigator,
+    viewModel: UserSettingsViewModel,
+    isMenuOpen: MutableState<Boolean>
+) {
     TopAppBar(
         elevation = 0.dp,
         backgroundColor = Color.Transparent,
@@ -48,7 +54,14 @@ private fun TopBar(isMenuOpen: MutableState<Boolean>) {
                 else
                     Icon(Icons.Default.Close, null)
             }
-        })
+        },
+        actions = {
+            if (viewModel.uiState.collectAsState().value == Loaded)
+                IconButton(onClick = { navigator.navigate(CreateRoom(accessToken, viewModel.currentUser.id)) }) {
+                    Icon(Icons.Default.Add, "LOL")
+                }
+        }
+    )
 }
 
 @Composable
@@ -94,7 +107,13 @@ private fun RoomsBoard(
                         val (user, messageInfo) = it
                         Box(modifier = Modifier.clickable {
                             viewModel.readMessages(user)
-                            navigator.navigate(MessengerNavTarget.MessageBoard(accessToken, user))
+                            navigator.navigate(
+                                MessengerNavTarget.MessageBoard(
+                                    accessToken,
+                                    viewModel.currentUser!!.id,
+                                    user.id
+                                )
+                            )
                         }) {
                             val (message, unread) = messageInfo
 
@@ -249,11 +268,11 @@ fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
         val reload = {
             settingsViewModel.loadFields()
             roomsViewModel.loadRooms()
-            roomsViewModel.connect()
+            roomsViewModel.reconnect()
         }
 
         BackdropScaffold(
-            appBar = { TopBar(menuOpen) },
+            appBar = { TopBar(accessToken, navigator, settingsViewModel, menuOpen) },
             scaffoldState = scaffoldState,
             backLayerContent = { SettingsMenu(settingsViewModel, snackbarHostState, reload) },
             frontLayerContent = {
