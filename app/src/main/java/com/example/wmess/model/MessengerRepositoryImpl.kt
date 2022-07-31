@@ -17,9 +17,9 @@ class MessengerRepositoryImpl(
     private val client: OkHttpClient,
     private val webSocketListener: MessengerWebSocketListener,
     private val gson: Gson,
-    accessToken: String
+    private val accessTokenHolder: AccessTokenHolder
 ) :
-    MessengerRepository(accessToken) {
+    MessengerRepository {
     private var users: Map<UUID, User> = mapOf()
     private var currentUser: User? = null
 
@@ -30,7 +30,7 @@ class MessengerRepositoryImpl(
             getUsers().onFailure { return it }
             users[id]
         }
-        return if (ret != null) resultOf(ret) else Error("User not found")
+        return if (ret != null) resultOf(ret) else Error(NoSuchElementException())
     }
 
     override suspend fun getCurrentUser(): QueryResult<User> =
@@ -73,7 +73,7 @@ class MessengerRepositoryImpl(
             .build()
             .newWebSocket(
                 Request.Builder()
-                    .url("${BASE_URL}messenger/connect?accessToken=$accessToken")
+                    .url("${BASE_URL}messenger/connect?accessToken=${accessTokenHolder.accessToken}")
                     .build(),
                 webSocketListener
             )
@@ -97,7 +97,8 @@ class MessengerRepositoryImpl(
             openWebSocket()
             return resultOf(webSocketListener.socketFlow
                 .map {
-                    val checkIndex = if (it.userFrom!! == currentUser!!.id) it.userTo!! else it.userFrom
+                    val checkIndex =
+                        if (it.userFrom!! == currentUser!!.id) it.userTo!! else it.userFrom
                     users.getOrElse(checkIndex) {
                         getUsers()
                         users[checkIndex]!!
@@ -115,6 +116,6 @@ class MessengerRepositoryImpl(
         return if (openWebSocket().send(gson.toJson(message))) {
             webSocketListener.sendToFlow(message)
             resultOf(Unit)
-        } else Error("Error sending the message")
+        } else Error(Exception("Error sending the message"))
     }
 }

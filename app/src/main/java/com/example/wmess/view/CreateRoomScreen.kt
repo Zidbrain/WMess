@@ -25,8 +25,8 @@ import org.koin.core.parameter.*
 import java.util.*
 
 @Composable
-fun CreateRoomScreen(navigator: MessengerNavigator, accessToken: String, currentUserId: UUID) {
-    val viewModel: CreateRoomViewModel by viewModel() { parametersOf(accessToken, currentUserId) }
+fun CreateRoomScreen(navigator: MessengerNavigator, currentUserId: UUID) {
+    val viewModel: CreateRoomViewModel by viewModel() { parametersOf(currentUserId) }
 
     Column {
         TopAppBar() {
@@ -63,7 +63,6 @@ fun CreateRoomScreen(navigator: MessengerNavigator, accessToken: String, current
                         .clickable {
                             navigator.navigate(
                                 MessengerNavTarget.MessageBoard(
-                                    accessToken,
                                     currentUserId,
                                     it.id
                                 )

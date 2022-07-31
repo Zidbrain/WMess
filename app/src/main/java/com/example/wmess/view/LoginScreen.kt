@@ -106,9 +106,7 @@ fun LoginScreen(navigator: LoginNavigator) {
                     Text(text = stringResource(state.errorMsg, state.errorReason.orEmpty()))
                 })
             is LoginScreenUiState.SignedIn -> navigator.NavigateComposable(
-                navTarget = Messenger(
-                    state.accessToken
-                )
+                navTarget = Messenger
             ) { popUpTo(0) }
             else -> {}
         }

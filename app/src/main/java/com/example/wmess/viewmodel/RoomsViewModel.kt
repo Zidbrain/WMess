@@ -4,7 +4,6 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.*
 import coil.*
 import com.example.wmess.*
-import com.example.wmess.R
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.UiState.*
@@ -46,7 +45,7 @@ class RoomsViewModel(
     }
 
     private fun setError(it: QueryResult.Error) {
-        uiState = Error(R.string.error_message, it.error)
+        uiState = Error(it)
     }
 
     private var connectionJob: Job? = null

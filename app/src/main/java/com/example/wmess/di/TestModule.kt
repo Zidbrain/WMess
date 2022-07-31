@@ -8,7 +8,9 @@ import com.example.wmess.ui.formatters.*
 import com.example.wmess.viewmodel.*
 import com.google.gson.*
 import com.google.gson.stream.*
+import kotlinx.coroutines.*
 import okhttp3.*
+import okhttp3.Response
 import org.koin.android.ext.koin.*
 import org.koin.androidx.viewmodel.dsl.*
 import org.koin.core.module.*
@@ -16,9 +18,7 @@ import org.koin.core.qualifier.*
 import org.koin.dsl.*
 import retrofit2.*
 import retrofit2.converter.gson.*
-import java.io.*
 import java.time.*
-import java.util.concurrent.TimeUnit.*
 
 const val AUTH_CLIENT = "auth"
 const val NO_AUTH_CLIENT = "noAuth"
@@ -46,23 +46,39 @@ fun Module.provideWebSocket() {
 fun Module.provideOkHttpClient() {
     single(named(NO_AUTH_CLIENT)) { OkHttpClient().newBuilder().build() }
 
-    single(named(AUTH_CLIENT)) { params ->
+    single(named(AUTH_CLIENT)) {
+        val accessTokenHolder: AccessTokenHolder = get()
+
         OkHttpClient().newBuilder().addInterceptor {
-            it.proceed(
-                it.request().newBuilder()
-                    .cacheControl(CacheControl.Builder().maxAge(3, SECONDS).build())
-                    .addHeader("Authorization", "Bearer ${params.get<String>()}")
-                    .build()
-            )
+            fun proceedWithAuth(): Response =
+                it.proceed(
+                    it.request().newBuilder()
+                        .addHeader("Authorization", "Bearer ${accessTokenHolder.accessToken}")
+                        .build()
+                )
+
+            val response = proceedWithAuth()
+
+            if (response.code != 401)
+                response
+            else {
+                response.close()
+                runBlocking {
+                    accessTokenHolder.retrieve()
+                        .onFailure { exception ->
+                            throw Exception("Error retrieving access token", exception.cause)
+                        }
+                }
+                proceedWithAuth()
+            }
         }
-            .cache(Cache(File("/cache/http_cache"), 2 * 1024L * 1024L))
             .build()
     }
 }
 
 fun Module.provideApi() {
     single { get<Retrofit>(named(NO_AUTH_CLIENT)).create(AuthApi::class.java) }
-    single { get<Retrofit>(named(AUTH_CLIENT)) { it }.create(MessengerApi::class.java) }
+    single { get<Retrofit>(named(AUTH_CLIENT)).create(MessengerApi::class.java) }
 }
 
 fun Module.provideRetrofit() {
@@ -74,7 +90,7 @@ fun Module.provideRetrofit() {
 
     single(named(AUTH_CLIENT)) {
         get<Retrofit.Builder>()
-            .client(get(named(AUTH_CLIENT)) { it })
+            .client(get(named(AUTH_CLIENT)))
             .build()
     }
 }
@@ -107,7 +123,7 @@ fun Module.provideImageLoader() {
     single {
         ImageLoader.Builder(androidContext())
             .crossfade(true)
-            .okHttpClient(get<OkHttpClient>(named(AUTH_CLIENT)) { it })
+            .okHttpClient(get<OkHttpClient>(named(AUTH_CLIENT)))
             .error(R.drawable.ic_baseline_error_outline_24)
             .build()
     }
@@ -117,11 +133,11 @@ fun Module.provideRepositories() {
     single<LoginRepository> { LoginRepositoryImpl(get()) }
     single<MessengerRepository> {
         MessengerRepositoryImpl(
-            get { it },
+            get(),
             get(named(AUTH_CLIENT)),
             get(),
             get(),
-            it.get()
+            get()
         )
     }
 }
@@ -130,8 +146,8 @@ fun Module.provideViewModels() {
     viewModel { LoginViewModel(get()) }
     viewModel { CachedLoginViewModel(get()) }
     viewModel { RegisterViewModel(get()) }
-    viewModel { RoomsViewModel(get { it }, get { it }) }
-    viewModel { UserSettingsViewModel(get { it }, get { it }) }
-    viewModel { MessageBoardViewModel(get { it }, it[1], it[2]) }
-    viewModel { CreateRoomViewModel(get() { it }, it.get()) }
+    viewModel { RoomsViewModel(get(), get()) }
+    viewModel { UserSettingsViewModel(get(), get()) }
+    viewModel { MessageBoardViewModel(get(), it[0], it[1]) }
+    viewModel { CreateRoomViewModel(get(), it.get()) }
 }

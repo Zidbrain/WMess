@@ -10,7 +10,7 @@ data class LoginInfo(
 data class AuthApiLoginResponse(val accessToken: String)
 
 sealed class LoginResult {
-    data class Success(val accessToken: String) : LoginResult()
+    object Success : LoginResult()
     object UserNotFound : LoginResult()
     data class Error(val error: String) : LoginResult()
 }

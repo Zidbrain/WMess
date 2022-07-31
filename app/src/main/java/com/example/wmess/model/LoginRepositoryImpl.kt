@@ -1,10 +1,16 @@
 package com.example.wmess.model
 
 import com.example.wmess.*
+import com.example.wmess.QueryResult.*
 import com.example.wmess.model.api.*
 import com.example.wmess.model.modelclasses.*
+import org.koin.core.context.*
+import org.koin.core.module.*
+import org.koin.dsl.*
 
 class LoginRepositoryImpl(private val authApi: AuthApi) : LoginRepository {
+
+    private var accessTokenHolderModule: Module? = null
 
     override suspend fun register(registerInfo: RegisterInfo): RegisterResult =
         catchAll(RegisterResult::Error) {
@@ -18,17 +24,23 @@ class LoginRepositoryImpl(private val authApi: AuthApi) : LoginRepository {
                 RegisterResult.Success(body)
         }
 
-    override suspend fun login(loginInfo: LoginInfo): LoginResult =
-        catchAll(LoginResult::Error) {
-            val result = authApi.login(loginInfo)
+    override suspend fun login(loginInfo: LoginInfo): LoginResult {
+        val holder = AccessTokenHolder.tryCreate(authApi, loginInfo)
+            .getOrElse {
+                return if (it is ErrorCode && it.errorCode == 404) LoginResult.UserNotFound
+                else LoginResult.Error(it.cause.message ?: "Error logging in")
+            }
 
-            val body = result.body()
-            if (body == null)
-                if (result.code() == 400) LoginResult.UserNotFound
-                else LoginResult.Error(result.message())
-            else
-                LoginResult.Success(body.accessToken)
+        if (accessTokenHolderModule != null)
+            unloadKoinModules(accessTokenHolderModule!!)
+
+        accessTokenHolderModule = module {
+            single { holder }
         }
+        loadKoinModules(accessTokenHolderModule!!)
+
+        return LoginResult.Success
+    }
 
     override suspend fun getCachedLoginInfo(): LoginInfo {
         return LoginInfo("string", "string")

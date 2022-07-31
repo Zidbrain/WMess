@@ -20,7 +20,7 @@ class CreateRoomViewModel(
     private val _users = mutableStateListOf<User>()
     val users: List<User> by lazy {
         viewModelScope.launch {
-            allUsers = repository.getUsers().getOrElse { uiState = Error(it.error); return@launch }
+            allUsers = repository.getUsers().getOrElse { uiState = Error(it); return@launch }
                 .filter { user -> user.id != currentUserId }
             _users.addAll(allUsers)
         }

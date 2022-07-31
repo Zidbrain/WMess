@@ -11,7 +11,7 @@ sealed class CachedLoginScreenUiState {
     object InProgress : CachedLoginScreenUiState()
     object Error : CachedLoginScreenUiState()
     object CacheMiss : CachedLoginScreenUiState()
-    data class SignedIn(val accessToken: String) : CachedLoginScreenUiState()
+    object SignedIn : CachedLoginScreenUiState()
 }
 
 class CachedLoginViewModel(
@@ -29,8 +29,8 @@ class CachedLoginViewModel(
             _uiState.value = if (loginInfo == null)
                 CachedLoginScreenUiState.CacheMiss
             else {
-                when (val result = repository.login(loginInfo)) {
-                    is LoginResult.Success -> CachedLoginScreenUiState.SignedIn(result.accessToken)
+                when (repository.login(loginInfo)) {
+                    is LoginResult.Success -> CachedLoginScreenUiState.SignedIn
                     else -> CachedLoginScreenUiState.Error
                 }
             }

@@ -20,7 +20,7 @@ class MessageBoardViewModel(
     private var connectionJob: Job? = null
 
     private fun connect() {
-        connectionJob = repository.notifications.getOrElse { uiState = Error(it.error); return }
+        connectionJob = repository.notifications.getOrElse { uiState = Error(it); return }
             .onEach { _history.add(it.second) }
             .onCompletion {
                 connectionJob = null
@@ -41,7 +41,7 @@ class MessageBoardViewModel(
         viewModelScope.launch {
             repository.getHistoryWith(withUser).switch(
                 onSuccess = { _history.addAll(it) },
-                onFailure = { uiState = Error(it.error) }
+                onFailure = { uiState = Error(it) }
             )
         }
         _history

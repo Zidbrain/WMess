@@ -3,7 +3,6 @@ package com.example.wmess.viewmodel
 import androidx.compose.runtime.*
 import androidx.lifecycle.*
 import coil.*
-import com.example.wmess.R
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.UiState.*
@@ -51,7 +50,7 @@ class UserSettingsViewModel(
 
         viewModelScope.launch {
             currentUser = repository.getCurrentUser().getOrElse {
-                _uiState.value = Error(R.string.error_message, it.error)
+                _uiState.value = Error(it)
                 return@launch
             }
             fields = UserSettingsFields(currentUser)

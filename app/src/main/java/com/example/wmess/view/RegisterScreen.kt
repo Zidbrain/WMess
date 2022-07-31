@@ -76,9 +76,7 @@ fun RegisterScreen(navigator: LoginNavigator) {
                 )
             }
             is RegisterScreenUiState.Register -> navigator.NavigateComposable(
-                navTarget = Messenger(
-                    state.accessToken
-                )
+                navTarget = Messenger
             ) { popUpTo(0) }
             else -> {}
         }

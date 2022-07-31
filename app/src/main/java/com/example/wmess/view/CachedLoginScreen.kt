@@ -23,7 +23,7 @@ fun CachedLoginScreen(navigator: LoginNavigator) {
                 .fillMaxSize()
         ) {
 
-            when (val state = viewModel.uiState.collectAsState().value) {
+            when (viewModel.uiState.collectAsState().value) {
                 CachedLoginScreenUiState.Constructed -> viewModel.login()
                 CachedLoginScreenUiState.Error ->
                     AlertDialog(onDismissRequest = {
@@ -47,7 +47,7 @@ fun CachedLoginScreen(navigator: LoginNavigator) {
                         Alignment.Center
                     )
                 )
-                is CachedLoginScreenUiState.SignedIn -> navigator.NavigateComposable(Messenger(state.accessToken))
+                is CachedLoginScreenUiState.SignedIn -> navigator.NavigateComposable(Messenger)
                 CachedLoginScreenUiState.CacheMiss -> navigator.NavigateComposable(Login)
             }
         }

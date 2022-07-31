@@ -24,10 +24,9 @@ import java.util.*
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
-fun MessageBoard(accessToken: String, currentUser: UUID, withUser: UUID) {
+fun MessageBoard(currentUser: UUID, withUser: UUID) {
     val viewModel: MessageBoardViewModel by viewModel {
         parametersOf(
-            accessToken,
             currentUser,
             withUser
         )

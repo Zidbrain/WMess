@@ -34,11 +34,9 @@ import com.example.wmess.viewmodel.*
 import com.example.wmess.viewmodel.UiState.*
 import com.google.accompanist.swiperefresh.*
 import org.koin.androidx.compose.*
-import org.koin.core.parameter.*
 
 @Composable
 private fun TopBar(
-    accessToken: String,
     navigator: MessengerNavigator,
     viewModel: UserSettingsViewModel,
     isMenuOpen: MutableState<Boolean>
@@ -57,7 +55,7 @@ private fun TopBar(
         },
         actions = {
             if (viewModel.uiState.collectAsState().value == Loaded)
-                IconButton(onClick = { navigator.navigate(CreateRoom(accessToken, viewModel.currentUser.id)) }) {
+                IconButton(onClick = { navigator.navigate(CreateRoom(viewModel.currentUser.id)) }) {
                     Icon(Icons.Default.Add, "LOL")
                 }
         }
@@ -68,7 +66,6 @@ private fun TopBar(
 private fun RoomsBoard(
     viewModel: RoomsViewModel,
     navigator: MessengerNavigator,
-    accessToken: String,
     snackbarHostState: SnackbarHostState,
     reload: () -> Unit
 ) {
@@ -109,7 +106,6 @@ private fun RoomsBoard(
                             viewModel.readMessages(user)
                             navigator.navigate(
                                 MessengerNavTarget.MessageBoard(
-                                    accessToken,
                                     viewModel.currentUser!!.id,
                                     user.id
                                 )
@@ -247,9 +243,9 @@ private fun SettingsMenu(
 }
 
 @Composable
-fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
-    val settingsViewModel: UserSettingsViewModel by viewModel { parametersOf(accessToken) }
-    val roomsViewModel: RoomsViewModel by viewModel { parametersOf(accessToken) }
+fun RoomsScreen(navigator: MessengerNavigator) {
+    val settingsViewModel: UserSettingsViewModel by viewModel()
+    val roomsViewModel: RoomsViewModel by viewModel()
 
     WMessTheme {
         val scaffoldState = rememberBackdropScaffoldState(initialValue = BackdropValue.Concealed)
@@ -272,14 +268,13 @@ fun RoomsScreen(navigator: MessengerNavigator, accessToken: String) {
         }
 
         BackdropScaffold(
-            appBar = { TopBar(accessToken, navigator, settingsViewModel, menuOpen) },
+            appBar = { TopBar(navigator, settingsViewModel, menuOpen) },
             scaffoldState = scaffoldState,
             backLayerContent = { SettingsMenu(settingsViewModel, snackbarHostState, reload) },
             frontLayerContent = {
                 RoomsBoard(
                     roomsViewModel,
                     navigator,
-                    accessToken,
                     snackbarHostState,
                     reload
                 )

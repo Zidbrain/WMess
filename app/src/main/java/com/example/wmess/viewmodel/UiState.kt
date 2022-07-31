@@ -9,5 +9,6 @@ sealed interface UiState {
     object Loaded : UiState
     data class Error(@StringRes val errorMsg: Int, val errorReason: String?) : UiState {
         constructor(errorReason: String) : this(R.string.error_message, errorReason)
+        constructor(error: QueryResult.Error) : this(error.cause.message ?: "An error occurred")
     }
 }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.*
 
 sealed class RegisterScreenUiState {
     object Unregistered : RegisterScreenUiState()
-    data class Register(val accessToken: String) : RegisterScreenUiState()
+    object Register : RegisterScreenUiState()
     data class Error(@StringRes val errorMsg: Int) : RegisterScreenUiState()
     object InProgress : RegisterScreenUiState()
 }
@@ -19,7 +19,8 @@ sealed class RegisterScreenUiState {
 class RegisterViewModel(
     private val repository: LoginRepository,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<RegisterScreenUiState>(RegisterScreenUiState.Unregistered)
+    private val _uiState =
+        MutableStateFlow<RegisterScreenUiState>(RegisterScreenUiState.Unregistered)
     val uiState: StateFlow<RegisterScreenUiState>
         get() = _uiState
 
@@ -43,9 +44,8 @@ class RegisterViewModel(
             _uiState.value = when (
                 repository.register(RegisterInfo(login, username.value, password))) {
                 is RegisterResult.Error -> basicError
-                is RegisterResult.Success -> when (val loginResult =
-                    repository.login(LoginInfo(login, password))) {
-                    is LoginResult.Success -> RegisterScreenUiState.Register(loginResult.accessToken)
+                is RegisterResult.Success -> when (repository.login(LoginInfo(login, password))) {
+                    is LoginResult.Success -> RegisterScreenUiState.Register
                     else -> basicError
                 }
                 RegisterResult.UserAlreadyExists -> RegisterScreenUiState.Error(R.string.register_login_taken)

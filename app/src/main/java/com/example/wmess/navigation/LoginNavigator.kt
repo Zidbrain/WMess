@@ -24,6 +24,6 @@ class LoginNavigator(navController: NavHostController) :
         object Login : LoginNavTarget("login")
         object CachedLogin : LoginNavTarget("cachedLogin")
         object Register : LoginNavTarget("Register")
-        data class Messenger(val accessToken: String) : LoginNavTarget(MessengerNavTarget.getRoute(accessToken))
+        object Messenger : LoginNavTarget(MessengerNavTarget.EXTERNAL_ROUTE)
     }
 }

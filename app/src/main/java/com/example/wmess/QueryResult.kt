@@ -2,7 +2,6 @@ package com.example.wmess
 
 import com.example.wmess.QueryResult.*
 import retrofit2.*
-import java.net.*
 
 sealed class QueryResult<out T> {
 
@@ -34,8 +33,8 @@ sealed class QueryResult<out T> {
 
     data class Success<out T>(val data: T) : QueryResult<T>()
     class Unauthorized : ErrorCode(401, "Unauthorized")
-    open class ErrorCode(val errorCode: Int, error: String) : Error(error)
-    open class Error(val error: String) : QueryResult<Nothing>()
+    open class ErrorCode(val errorCode: Int, error: String) : Error(Exception(error))
+    open class Error(val cause: Throwable) : QueryResult<Nothing>()
 }
 
 fun <T> resultOf(value: T): Success<T> =
@@ -46,10 +45,9 @@ inline fun <T> safeCall(
 ): QueryResult<T> =
     try {
         block().toQueryResult()
-    } catch (ex: SocketTimeoutException) {
-        Error("Error establishing connection")
-    } catch (ex: Exception) {
-        Error(ex.message ?: "An error occurred")
+    }
+    catch (ex: Exception) {
+        Error(ex)
     }
 
 fun <T> Response<T>.toQueryResult(): QueryResult<T> {
