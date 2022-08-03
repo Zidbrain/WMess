@@ -1,8 +1,12 @@
 package com.example.wmess.viewmodel
 
+import android.content.*
+import android.net.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.*
 import coil.*
+import coil.request.*
+import coil.request.CachePolicy.*
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.viewmodel.UiState.*
@@ -55,6 +59,20 @@ class UserSettingsViewModel(
             }
             fields = UserSettingsFields(currentUser)
             _uiState.value = Loaded
+        }
+    }
+
+    fun changeAvatar(uri: Uri, context: Context, painterHandle: MutableState<ImageRequest>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            context.contentResolver.openInputStream(uri).use { stream ->
+                repository.changeAvatar(stream!!).getOrThrow()
+
+                painterHandle.value = ImageRequest.Builder(context)
+                    .memoryCachePolicy(WRITE_ONLY)
+                    .diskCachePolicy(WRITE_ONLY)
+                    .data(currentUser.avatarURL)
+                    .build()
+            }
         }
     }
 }

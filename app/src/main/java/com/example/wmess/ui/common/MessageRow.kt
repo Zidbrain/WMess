@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.*
 import coil.*
 import coil.compose.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.model.modelclasses.MessageType.*
 import com.example.wmess.ui.formatters.*
 
 @OptIn(ExperimentalUnitApi::class)
@@ -38,7 +40,8 @@ fun MessageRow(
             imageLoader = imageLoader,
             modifier = Modifier
                 .clip(CircleShape)
-                .size(80.dp)
+                .size(80.dp),
+            contentScale = ContentScale.FillBounds
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
@@ -72,7 +75,12 @@ fun MessageRow(
                             withStyle(SpanStyle(color = Color.Blue)) {
                                 append("You: ")
                             }
-                        append(message.content!!)
+                        when (message.messageType) {
+                            TEXT -> append(message.content!!)
+                            FILE -> withStyle(SpanStyle(color = Color.Cyan)) {
+                                append("file")
+                            }
+                        }
                     },
                     style = TextStyle(Color.DarkGray, TextUnit(14F, TextUnitType.Sp)),
                     overflow = TextOverflow.Ellipsis,

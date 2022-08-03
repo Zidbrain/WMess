@@ -1,9 +1,9 @@
 package com.example.wmess.model
 
 import com.example.wmess.*
-import com.example.wmess.QueryResult.*
 import com.example.wmess.model.api.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.network.QueryResult.*
 import org.koin.core.context.*
 import org.koin.core.module.*
 import org.koin.dsl.*

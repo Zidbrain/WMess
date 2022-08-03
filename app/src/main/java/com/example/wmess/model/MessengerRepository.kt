@@ -2,7 +2,9 @@ package com.example.wmess.model
 
 import com.example.wmess.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.network.*
 import kotlinx.coroutines.flow.*
+import java.io.*
 import java.util.*
 
 interface MessengerRepository {
@@ -17,4 +19,19 @@ interface MessengerRepository {
     fun reconnect()
     val notifications: QueryResult<Flow<Pair<User, Message>>>
     fun send(message: Message): QueryResult<Unit>
+
+    suspend fun uploadFile(
+        inputStream: InputStream,
+        fileName: String,
+        progressListener: ProgressListener? = null
+    ): QueryResult<UUID>
+
+    suspend fun getFileInfo(fileId: UUID): QueryResult<FileInfo>
+    suspend fun getFile(
+        fileId: UUID,
+        fileStream: OutputStream,
+        progressListener: ProgressListener? = null
+    ): QueryResult<Unit>
+
+    suspend fun changeAvatar(inputStream: InputStream): QueryResult<Unit>
 }

@@ -2,6 +2,7 @@ package com.example.wmess.viewmodel
 
 import androidx.annotation.*
 import com.example.wmess.*
+import com.example.wmess.network.*
 
 sealed interface UiState {
     object Initialized : UiState

@@ -4,6 +4,7 @@ import coil.*
 import com.example.wmess.*
 import com.example.wmess.model.*
 import com.example.wmess.model.api.*
+import com.example.wmess.network.*
 import com.example.wmess.ui.formatters.*
 import com.example.wmess.viewmodel.*
 import com.google.gson.*
@@ -72,6 +73,7 @@ fun Module.provideOkHttpClient() {
                 proceedWithAuth()
             }
         }
+            .addNetworkInterceptor(OutputStreamNetworkInterceptor())
             .build()
     }
 }

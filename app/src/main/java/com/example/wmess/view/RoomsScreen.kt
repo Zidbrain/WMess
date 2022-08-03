@@ -2,6 +2,9 @@
 
 package com.example.wmess.view
 
+import android.net.*
+import androidx.activity.compose.*
+import androidx.activity.result.contract.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -19,14 +22,17 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.*
+import androidx.core.content.*
 import coil.compose.*
+import coil.request.*
 import com.example.wmess.R.*
 import com.example.wmess.navigation.*
-import com.example.wmess.navigation.MessengerNavigator.*
 import com.example.wmess.navigation.MessengerNavigator.MessengerNavTarget.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.ui.theme.*
@@ -34,6 +40,7 @@ import com.example.wmess.viewmodel.*
 import com.example.wmess.viewmodel.UiState.*
 import com.google.accompanist.swiperefresh.*
 import org.koin.androidx.compose.*
+import java.io.*
 
 @Composable
 private fun TopBar(
@@ -105,7 +112,7 @@ private fun RoomsBoard(
                         Box(modifier = Modifier.clickable {
                             viewModel.readMessages(user)
                             navigator.navigate(
-                                MessengerNavTarget.MessageBoard(
+                                MessageBoard(
                                     viewModel.currentUser!!.id,
                                     user.id
                                 )
@@ -183,16 +190,43 @@ private fun SettingsMenu(
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box {
+                            val context = LocalContext.current
+
+                            val model = remember {
+                                mutableStateOf(
+                                    ImageRequest.Builder(context)
+                                        .data(viewModel.currentUser.avatarURL)
+                                        .build()
+                                )
+                            }
                             AsyncImage(
-                                model = viewModel.currentUser.avatarURL,
-                                imageLoader = viewModel.imageLoader,
+                                model = model.value,
                                 contentDescription = null,
+                                contentScale = ContentScale.FillBounds,
+                                imageLoader = viewModel.imageLoader,
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .size(96.dp)
+                                    .size(96.dp),
                             )
+
+                            var imageUri: Uri? = null
+                            val launcher =
+                                rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
+                                    if (it)
+                                        viewModel.changeAvatar(imageUri!!, context, model)
+                                }
+
                             IconButton(
-                                onClick = { /*TODO*/ },
+                                onClick = {
+                                    val imageFile = File(context.filesDir, "avatar.png")
+                                    imageUri = FileProvider.getUriForFile(
+                                        context,
+                                        "com.example.wmess.provider",
+                                        imageFile
+                                    )
+
+                                    launcher.launch(imageUri)
+                                },
                                 modifier = Modifier
                                     .align(Alignment.BottomStart)
                                     .background(Color.White, CircleShape)

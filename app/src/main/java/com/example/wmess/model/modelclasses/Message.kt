@@ -9,7 +9,7 @@ data class Message(
     val userTo: UUID?,
     val messageType: MessageType,
     val content: String?,
-    @SerializedName("fileID") val fileHandle: String?,
+    @SerializedName("fileID") val fileHandle: UUID?,
     val dateSent: Instant,
     val isRead: Boolean = false
 )

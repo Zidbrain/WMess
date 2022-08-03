@@ -1,6 +1,6 @@
-package com.example.wmess
+package com.example.wmess.network
 
-import com.example.wmess.QueryResult.*
+import com.example.wmess.network.QueryResult.*
 import retrofit2.*
 
 sealed class QueryResult<out T> {
@@ -26,16 +26,35 @@ sealed class QueryResult<out T> {
         else block(this as Error)
     }
 
+    fun getOrThrow(): T =
+        if (this is Success<T>) data
+        else throw (this as Error).cause
+
+    inline fun getOrErrorCode(block: (ErrorCode) -> Nothing): T =
+        when (this) {
+            is Success<T> -> data
+            is ErrorCode -> block(this)
+            else -> throw ((this as Error).cause)
+        }
+
     inline fun switch(onSuccess: (T) -> Unit, onFailure: (Error) -> Unit) {
         if (this is Success<T>) onSuccess(data)
         else onFailure(this as Error)
     }
 
     data class Success<out T>(val data: T) : QueryResult<T>()
-    class Unauthorized : ErrorCode(401, "Unauthorized")
-    open class ErrorCode(val errorCode: Int, error: String) : Error(Exception(error))
+    class Unauthorized(response: Response<*>) : ErrorCode(response)
+    open class ErrorCode(val response: Response<*>) : Error(ErrorCodeResponseException(response)) {
+        val errorCode = response.code()
+    }
+
     open class Error(val cause: Throwable) : QueryResult<Nothing>()
 }
+
+class ErrorCodeResponseException(val response: Response<*>) : Exception(
+    """Server responded with the code ${response.code()}. With message:
+        ${response.errorBody()?.string() ?: response.message()}"""
+)
 
 fun <T> resultOf(value: T): Success<T> =
     Success(value)
@@ -45,18 +64,20 @@ inline fun <T> safeCall(
 ): QueryResult<T> =
     try {
         block().toQueryResult()
-    }
-    catch (ex: Exception) {
+    } catch (ex: Exception) {
         Error(ex)
     }
 
+@Suppress("UNCHECKED_CAST")
 fun <T> Response<T>.toQueryResult(): QueryResult<T> {
     val body = body()
-    return if (body == null)
-        when (val code = code()) {
-            401 -> Unauthorized()
-            else -> ErrorCode(code, "Server responded with the code $code")
+    return if (!isSuccessful)
+        when (code()) {
+            401 -> Unauthorized(this)
+            else -> ErrorCode(this)
         }
+    else if (body == null)
+        Success<Void?>(null) as QueryResult<T>
     else
         Success(body)
 }

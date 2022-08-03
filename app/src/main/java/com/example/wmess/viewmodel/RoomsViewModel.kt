@@ -6,6 +6,7 @@ import coil.*
 import com.example.wmess.*
 import com.example.wmess.model.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.network.*
 import com.example.wmess.viewmodel.UiState.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*

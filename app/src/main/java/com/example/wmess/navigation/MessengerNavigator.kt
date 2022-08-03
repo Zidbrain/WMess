@@ -43,7 +43,7 @@ class MessengerNavigator(navController: NavHostController) :
                 RoomsScreen(this@MessengerNavigator)
             }
             composable(MessageBoard.ROUTE_SCHEME) {
-                com.example.wmess.view.MessageBoard(
+                com.example.wmess.view.messageboard.MessageBoard(
                     UUID.fromString(it.getArgument("userId")),
                     UUID.fromString(it.getArgument("withUser"))
                 )

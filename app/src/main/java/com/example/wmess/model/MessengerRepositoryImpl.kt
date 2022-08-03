@@ -1,14 +1,17 @@
 package com.example.wmess.model
 
 import com.example.wmess.*
-import com.example.wmess.QueryResult.*
 import com.example.wmess.di.*
 import com.example.wmess.model.api.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.network.*
+import com.example.wmess.network.QueryResult.*
 import com.google.gson.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.*
+import retrofit2.Response
+import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit.*
 
@@ -118,4 +121,53 @@ class MessengerRepositoryImpl(
             resultOf(Unit)
         } else Error(Exception("Error sending the message"))
     }
+
+    override suspend fun uploadFile(
+        inputStream: InputStream,
+        fileName: String,
+        progressListener: ProgressListener?
+    ): QueryResult<UUID> =
+        safeCall {
+            val part =
+                MultipartBody.Part.createFormData("file", fileName, inputStream, progressListener)
+
+            messengerApi.uploadFile(part)
+        }.map { it.handle }
+
+    override suspend fun getFileInfo(fileId: UUID): QueryResult<FileInfo> {
+        var response: Response<*>? = null
+
+        return safeCall { messengerApi.getFileInfo(fileId).also { response = it } }.map {
+            val headers = response!!.headers()
+            FileInfo(
+                headers["content-disposition"]!!
+                    .substringAfter("filename=")
+                    .substringBefore(';'),
+                headers["content-length"]!!.toLong()
+            )
+        }
+    }
+
+    override suspend fun getFile(
+        fileId: UUID,
+        fileStream: OutputStream,
+        progressListener: ProgressListener?
+    ): QueryResult<Unit> =
+        safeCall { messengerApi.getFile(fileId, fileStream, progressListener) }.map {
+            it.byteStream().use { stream ->
+                stream.transferTo(fileStream)
+            }
+        }
+
+    override suspend fun changeAvatar(inputStream: InputStream): QueryResult<Unit> =
+        safeCall {
+            messengerApi.postAvatar(
+                MultipartBody.Part.createFormData(
+                    "file",
+                    "avatar.png",
+                    inputStream,
+                    null
+                )
+            )
+        }
 }
