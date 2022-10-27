@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.wmess.view.messageboard
 
 import androidx.activity.compose.*

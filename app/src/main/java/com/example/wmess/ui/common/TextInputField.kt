@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+
 package com.example.wmess.ui.common
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
