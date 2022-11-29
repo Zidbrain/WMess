@@ -1,6 +1,5 @@
 package com.example.wmess.network
 
-import com.example.wmess.*
 import com.example.wmess.network.ResponseProgressListener.Companion.asOutputStream
 import okhttp3.*
 import okhttp3.Interceptor.*

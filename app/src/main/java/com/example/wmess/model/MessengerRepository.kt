@@ -1,6 +1,5 @@
 package com.example.wmess.model
 
-import com.example.wmess.*
 import com.example.wmess.model.modelclasses.*
 import com.example.wmess.network.*
 import kotlinx.coroutines.flow.*

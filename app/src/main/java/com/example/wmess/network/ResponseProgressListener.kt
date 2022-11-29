@@ -1,6 +1,5 @@
 package com.example.wmess.network
 
-import com.example.wmess.*
 import okhttp3.*
 import okio.*
 

@@ -81,3 +81,10 @@ fun <T> Response<T>.toQueryResult(): QueryResult<T> {
     else
         Success(body)
 }
+
+inline fun <T> query(block: () -> T): QueryResult<T> =
+    try {
+        Success(block())
+    } catch (ex: Throwable) {
+        Error(ex)
+    }

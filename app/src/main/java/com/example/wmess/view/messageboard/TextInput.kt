@@ -23,7 +23,7 @@ import com.example.wmess.R.*
 import com.example.wmess.ui.common.*
 import com.example.wmess.viewmodel.*
 
-@OptIn(ExperimentalUnitApi::class)
+@OptIn(ExperimentalUnitApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun ConstraintLayoutScope.TextInput(
     viewModel: MessageBoardViewModel,

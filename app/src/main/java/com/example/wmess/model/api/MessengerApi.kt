@@ -1,7 +1,7 @@
 package com.example.wmess.model.api
 
-import com.example.wmess.*
 import com.example.wmess.model.modelclasses.*
+import com.example.wmess.network.*
 import okhttp3.*
 import retrofit2.Response
 import retrofit2.http.*

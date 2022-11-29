@@ -1,5 +1,6 @@
 package com.example.wmess.model.modelclasses
 
+import com.google.gson.*
 import com.google.gson.annotations.*
 import java.time.*
 import java.util.*
@@ -15,6 +16,13 @@ data class Message(
 )
 
 enum class MessageType {
-    @SerializedName("Text") TEXT,
-    @SerializedName("File") FILE
+    TEXT,
+    FILE
 }
+
+enum class NotificationType {
+    @SerializedName("MessageArray") MESSAGE_ARRAY,
+    @SerializedName("Message") MESSAGE
+}
+
+data class Notification(val notificationType: NotificationType, val content: JsonElement)

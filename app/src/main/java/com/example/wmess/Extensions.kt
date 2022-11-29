@@ -3,7 +3,8 @@ package com.example.wmess
 import android.content.*
 import android.net.*
 import android.provider.*
-import com.example.wmess.InputStreamRequestBody.Companion.asRequestBody
+import com.example.wmess.network.*
+import com.example.wmess.network.InputStreamRequestBody.Companion.asRequestBody
 import com.google.gson.*
 import com.google.gson.reflect.*
 import okhttp3.*

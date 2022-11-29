@@ -1,4 +1,4 @@
-package com.example.wmess
+package com.example.wmess.network
 
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
